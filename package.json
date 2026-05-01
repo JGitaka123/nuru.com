@@ -15,7 +15,10 @@
     "db:seed": "tsx scripts/seed.ts",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:coverage": "vitest run --coverage",
     "ai:eval": "tsx scripts/run-evals.ts",
+    "vapid:generate": "tsx scripts/generate-vapid.ts",
     "mpesa:simulate": "tsx scripts/simulate-stk.ts",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit"

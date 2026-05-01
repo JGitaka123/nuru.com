@@ -111,9 +111,18 @@ comment above the call.
 - [x] Agent dashboard (my listings, listing creator with photo upload, verify)
 - [x] Tenant pages (search, listing detail, viewing booking, my viewings)
 - [x] Phone-OTP login flow on web
-- [ ] WhatsApp Business inbound + autoreply
-- [ ] Push notifications via PWA + Web Push
-- [ ] Apply Prisma migrations + run integration tests against real DB
+- [x] WhatsApp Business client + inbound webhook + autoreply prompt (creds-gated)
+- [x] Web Push subscription endpoints + VAPID generator + browser helper
+- [x] Whisper server stub (FastAPI + faster-whisper) for the GPU box
+- [x] CI: GitHub Actions for typecheck/test on api + web; conditional AI evals
+- [x] Integration test scaffold (`pnpm test:integration`)
+- [x] Seed, eval-runner, STK simulator, VAPID generator scripts
+- [x] Vendor setup + deployment + incident runbooks (`docs/runbooks/`)
+- [ ] Apply Prisma migrations against a real DB (deployment time)
+- [ ] Approve "NURU" sender ID with Africa's Talking (3 days lead time)
+- [ ] Approve Daraja B2C production access (~3 weeks lead time)
+- [ ] Verify Meta Business + WhatsApp display name (~1-2 weeks lead time)
+- [ ] Register with ODPC (Kenya Data Protection) (~30 days lead time)
 
 ## How to ask Claude Code for help
 

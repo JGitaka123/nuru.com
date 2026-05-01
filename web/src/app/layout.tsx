@@ -37,8 +37,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
         <ServiceWorkerRegister />
         <footer className="border-t border-ink-200 bg-white">
-          <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-ink-500">
-            © {new Date().getFullYear()} Nuru. Long-term rentals in Nairobi.
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-6 text-sm text-ink-500">
+            <span>© {new Date().getFullYear()} Nuru. Long-term rentals in Nairobi.</span>
+            <nav className="flex gap-4">
+              <Link href="/privacy" className="hover:text-brand-600">Privacy</Link>
+              <a href="mailto:hello@nuru.com" className="hover:text-brand-600">Contact</a>
+            </nav>
           </div>
         </footer>
       </body>

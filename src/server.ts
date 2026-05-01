@@ -8,6 +8,7 @@ import { photoRoutes } from "./routes/photos";
 import { viewingRoutes } from "./routes/viewings";
 import { verificationRoutes } from "./routes/verification";
 import { escrowRoutes } from "./routes/escrow";
+import { pushRoutes } from "./routes/push";
 import { logger } from "./lib/logger";
 import { inferenceHealth } from "./services/inference";
 import { AppError, toHttpError } from "./lib/errors";
@@ -41,6 +42,7 @@ app.register(photoRoutes);
 app.register(viewingRoutes);
 app.register(verificationRoutes);
 app.register(escrowRoutes);
+app.register(pushRoutes);
 app.register(searchRoutes);
 app.register(webhookRoutes);
 

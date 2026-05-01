@@ -17,6 +17,25 @@ datasource db {
 }
 
 // =====================================================
+// PUSH SUBSCRIPTIONS — Web Push (PWA notifications)
+// =====================================================
+
+// Browser/device subscription for Web Push. One user → many devices.
+// Required for viewing reminders, escrow updates, agent inquiries.
+model PushSubscription {
+  id           String   @id @default(cuid())
+  userId       String
+  endpoint     String   @unique  // browser-provided URL
+  p256dh       String   // ECDH public key
+  auth         String   // auth secret
+  userAgent    String?
+  createdAt    DateTime @default(now())
+  lastUsedAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+// =====================================================
 // AUTH — phone OTP attempts
 // =====================================================
 
