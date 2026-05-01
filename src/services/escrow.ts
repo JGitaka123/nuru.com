@@ -90,6 +90,20 @@ export async function initiateDeposit(input: InitiateDepositInput) {
  * MUST be idempotent — Daraja retries on network failures.
  */
 export async function handleStkCallback(cb: StkCallbackPayload) {
+  // Try subscription billing first — invoices and escrows share the
+  // callback URL but use distinct merchantRequestIds.
+  const { handleSubscriptionStkCallback } = await import("./billing");
+  const wasSubscription = await handleSubscriptionStkCallback(cb.merchantRequestId, {
+    resultCode: cb.resultCode,
+    resultDesc: cb.resultDesc,
+    amount: cb.amount,
+    mpesaReceiptNumber: cb.mpesaReceiptNumber,
+  }).catch((err) => {
+    logger.warn({ err }, "subscription stk callback errored — fallthrough");
+    return false;
+  });
+  if (wasSubscription) return;
+
   const escrow = await prisma.escrow.findFirst({
     where: { stkMerchantId: cb.merchantRequestId },
     include: { lease: { include: { listing: true, tenant: true, landlord: true } } },

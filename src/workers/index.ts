@@ -14,7 +14,9 @@ import { startEventProcessorWorker } from "./event-processor";
 import { startMarketIntelWorker } from "./market-intel";
 import { startOutreachSenderWorker } from "./outreach-sender";
 import { startSearchAlertWorker } from "./search-alert";
-import { marketIntelQueue } from "./queues";
+import { startBillingWorker } from "./billing";
+import { startAgentTasksWorker } from "./agent-tasks";
+import { marketIntelQueue, billingQueue, agentTasksQueue } from "./queues";
 
 const FILTER = (process.env.WORKER_FILTER ?? "").split(",").map((s) => s.trim()).filter(Boolean);
 const enabled = (name: string) => FILTER.length === 0 || FILTER.includes(name);
@@ -60,6 +62,24 @@ async function main() {
   if (enabled("search-alerts")) {
     const w = startSearchAlertWorker();
     workers.push({ name: "search-alerts", close: () => w.close() });
+  }
+  if (enabled("billing")) {
+    const w = startBillingWorker();
+    workers.push({ name: "billing", close: () => w.close() });
+    await billingQueue.add(
+      "daily",
+      {},
+      { repeat: { pattern: "0 9 * * *" }, jobId: "billing:daily" },
+    ).catch((e) => logger.warn({ err: e }, "could not schedule billing"));
+  }
+  if (enabled("agent-tasks")) {
+    const w = startAgentTasksWorker();
+    workers.push({ name: "agent-tasks", close: () => w.close() });
+    await agentTasksQueue.add(
+      "scan",
+      { mode: "scan" },
+      { repeat: { pattern: "0 */6 * * *" }, jobId: "agent-tasks:scan" },
+    ).catch((e) => logger.warn({ err: e }, "could not schedule agent-tasks"));
   }
   logger.info({ workers: workers.map((w) => w.name) }, "workers started");
 }

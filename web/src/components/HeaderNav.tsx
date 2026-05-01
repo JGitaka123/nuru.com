@@ -5,10 +5,12 @@ import Link from "next/link";
 
 const TENANT_LINKS: Array<[string, string]> = [
   ["/search", "Search"],
+  ["/messages", "Messages"],
   ["/me/saved", "Saved"],
   ["/me/searches", "Alerts"],
   ["/me/applications", "Applications"],
   ["/me/viewings", "Viewings"],
+  ["/pricing", "Pricing"],
 ];
 
 export default function HeaderNav() {

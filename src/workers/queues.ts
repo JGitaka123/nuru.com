@@ -70,3 +70,11 @@ export interface SearchAlertJob {
   listingId: string;
 }
 export const searchAlertQueue = new Queue<SearchAlertJob>("search-alerts", baseOpts);
+
+// Subscription billing — daily charge runner.
+export interface BillingJob { tick?: number }
+export const billingQueue = new Queue<BillingJob>("billing", baseOpts);
+
+// Autonomous CRM — scanner + executor.
+export interface AgentTasksJob { mode: "scan" | "execute"; taskId?: string }
+export const agentTasksQueue = new Queue<AgentTasksJob>("agent-tasks", baseOpts);

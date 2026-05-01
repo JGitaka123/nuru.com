@@ -153,7 +153,32 @@ comment above the call.
       mobile nav drawer, "Save this search" CTA on results, market-comparison
       badge ("X% below market") on listing detail
 - [x] Admin web dashboard — funnel chart, leads table, campaigns control panel
+- [x] **Subscription tiers** — TRIAL / BRONZE / SILVER / GOLD / PLATINUM with
+      Plan registry (`src/services/plans.ts`). 30-day trial. Pricing:
+      KES 2.5K / 7.5K / 20K / 60K per month. Feature differentiation: listing
+      caps, priority rank, autoreply, featured placement, dedicated AI
+      assistant, API access, account manager, white-label.
+- [x] **Subscription billing** — M-Pesa STK push monthly via the existing
+      Daraja client; idempotent on `merchantRequestId`; the same `/v1/webhooks/mpesa`
+      handler dispatches to billing first then escrow. Auto-retry 3× then suspend.
+- [x] **Autonomous client management** — scanner detects ONBOARDING_NUDGE,
+      TRIAL_ENDING_3_DAYS/_TODAY/_ENDED, PAYMENT_FAILED_RETRY/_FINAL, CHURN_RISK,
+      UPSELL_OPPORTUNITY, RENEWAL_REMINDER. Sonnet drafts personalized SMS+email
+      per task; auto-executes if confidence ≥ 0.7, else REVIEW_NEEDED for admin.
+      Hard cap of 2 outbound messages per user per week.
+- [x] **Real-time chat** — Conversation/Message models, REST + Server-Sent
+      Events stream, in-process pub/sub. /messages and /messages/[id] UI.
+- [x] **Reviews** — listings, agents, tenants. 1-5 stars + body. Verified
+      flag based on lease/viewing relationship. ReviewsBlock on listing detail.
+- [x] **Referral codes** — generate-on-demand 6-char codes; 1 free month for
+      referrer + 20% off first month for redeemer; payout on first paid invoice.
+- [x] **SEO** — sitemap.ts (dynamic from active listings), robots.ts,
+      JSON-LD (RealEstateListing) on listing detail, OG metadata on /pricing.
+- [x] **Calendar** — `.ics` download for confirmed viewings.
+- [x] **Compare** — /compare?ids=a,b,c,d side-by-side feature table.
 - [ ] Apply Prisma migrations against a real DB (deployment time)
+- [ ] **Deferred (next iteration)**: dark mode, full Swahili i18n,
+      per-listing PostGIS coordinates with agent map-pin UI
 - [ ] Approve "NURU" sender ID with Africa's Talking (3 days lead time)
 - [ ] Approve Daraja B2C production access (~3 weeks lead time)
 - [ ] Verify Meta Business + WhatsApp display name (~1-2 weeks lead time)

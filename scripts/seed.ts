@@ -10,6 +10,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import { seedPlans } from "../src/services/plans";
 
 const prisma = new PrismaClient();
 
@@ -19,6 +20,8 @@ const NEIGHBORHOODS = [
 
 async function main() {
   console.log("Seeding…");
+  await seedPlans();
+  console.log("  plan registry: seeded");
 
   // 1. Admin user.
   const admin = await prisma.user.upsert({

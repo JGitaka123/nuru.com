@@ -7,6 +7,8 @@ import { formatKes, formatCategory } from "@/lib/format";
 import SaveButton from "@/components/SaveButton";
 import SimilarListings from "@/components/SimilarListings";
 import ImageGallery from "@/components/ImageGallery";
+import ReviewsBlock from "@/components/ReviewsBlock";
+import ChatStarter from "@/components/ChatStarter";
 import { Skeleton } from "@/components/Skeleton";
 
 interface MarketCmp {
@@ -116,6 +118,7 @@ export default function ListingPage({ params }: { params: Promise<{ id: string }
           >
             Apply to rent
           </Link>
+          <ChatStarter listingId={listing.id} />
           {listing.agent && (
             <div className="border-t border-ink-100 pt-4 text-sm">
               <p className="text-ink-500">Listed by</p>
@@ -128,7 +131,37 @@ export default function ListingPage({ params }: { params: Promise<{ id: string }
         </aside>
       </div>
 
+      <ReviewsBlock listingId={listing.id} />
+
       <SimilarListings listingId={listing.id} />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "RealEstateListing",
+            name: listing.title,
+            description: listing.description,
+            url: `${process.env.NEXT_PUBLIC_WEB_URL ?? "https://nuru.com"}/listing/${listing.id}`,
+            address: {
+              "@type": "PostalAddress",
+              addressLocality: listing.neighborhood,
+              addressRegion: "Nairobi",
+              addressCountry: "KE",
+            },
+            numberOfRooms: listing.bedrooms,
+            numberOfBathroomsTotal: listing.bathrooms,
+            offers: {
+              "@type": "Offer",
+              price: Math.round(listing.rentKesCents / 100),
+              priceCurrency: "KES",
+              availability: listing.status === "ACTIVE" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            },
+            image: listing.primaryPhotoKey ? `${process.env.NEXT_PUBLIC_PHOTO_URL ?? "https://photos.nuru.com"}/${listing.primaryPhotoKey}` : undefined,
+          }),
+        }}
+      />
     </article>
   );
 }

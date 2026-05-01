@@ -16,7 +16,8 @@ import {
   bookViewing, confirmViewing, rescheduleViewing,
   setViewingStatus, listMyViewings, BookingInputSchema,
 } from "../services/viewings";
-import { ValidationError } from "../lib/errors";
+import { prisma } from "../db/client";
+import { ValidationError, NotFoundError, ForbiddenError } from "../lib/errors";
 
 const IdParam = z.object({ id: z.string().min(1) });
 
@@ -84,6 +85,46 @@ export async function viewingRoutes(app: FastifyInstance) {
     },
   );
 
+  // Calendar (.ics) for confirmed viewings — adds to Apple/Google/Outlook.
+  app.get(
+    "/v1/viewings/:id/calendar.ics",
+    { preHandler: requireAuth },
+    async (req, reply) => {
+      const { id } = IdParam.parse(req.params);
+      if (!req.user) throw new ValidationError("No session");
+      const v = await prisma.viewing.findUnique({
+        where: { id },
+        include: { listing: { select: { title: true, neighborhood: true, addressLine: true, agent: { select: { phoneE164: true, name: true } } } } },
+      });
+      if (!v) throw new NotFoundError("Viewing");
+      if (req.user.role !== "ADMIN" && v.tenantId !== req.user.sub && v.listing && (v.listing as any).agent === null) {
+        throw new ForbiddenError("Not your viewing");
+      }
+      const dt = (d: Date) => d.toISOString().replace(/[-:]|\.\d{3}/g, "");
+      const start = v.scheduledAt;
+      const end = new Date(start.getTime() + 30 * 60 * 1000);
+      const ics = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Nuru//Viewings//EN",
+        "BEGIN:VEVENT",
+        `UID:viewing-${v.id}@nuru.com`,
+        `DTSTAMP:${dt(new Date())}`,
+        `DTSTART:${dt(start)}`,
+        `DTEND:${dt(end)}`,
+        `SUMMARY:Nuru — viewing: ${escapeIcs(v.listing.title)}`,
+        `LOCATION:${escapeIcs(v.listing.addressLine ?? v.listing.neighborhood)}`,
+        `DESCRIPTION:${escapeIcs(`Agent: ${v.listing.agent.name ?? ""} ${v.listing.agent.phoneE164}`)}`,
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+      reply
+        .header("Content-Type", "text/calendar; charset=utf-8")
+        .header("Content-Disposition", `attachment; filename="viewing-${v.id}.ics"`)
+        .send(ics);
+    },
+  );
+
   app.post(
     "/v1/viewings/:id/rate",
     { preHandler: requireRole("TENANT", "ADMIN") },
@@ -94,4 +135,8 @@ export async function viewingRoutes(app: FastifyInstance) {
       return reply.send(v);
     },
   );
+}
+
+function escapeIcs(s: string): string {
+  return s.replace(/[\\;,]/g, (c) => `\\${c}`).replace(/\r?\n/g, "\\n");
 }

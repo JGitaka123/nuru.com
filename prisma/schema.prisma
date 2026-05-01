@@ -703,3 +703,267 @@ model SuppressionList {
 
   @@index([email])
 }
+
+// =====================================================
+// SUBSCRIPTIONS / BILLING
+// =====================================================
+
+enum PlanTier {
+  TRIAL
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+  PAUSED
+}
+
+enum InvoiceStatus {
+  OPEN
+  PROCESSING
+  PAID
+  FAILED
+  VOID
+}
+
+model Plan {
+  id               PlanTier @id
+  name             String
+  monthlyKesCents  Int
+  yearlyKesCents   Int?
+  maxActiveListings Int?    // null = unlimited
+  features         Json
+  rank             Int
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  subscriptions    Subscription[]
+}
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  planTier           PlanTier
+  plan               Plan               @relation(fields: [planTier], references: [id])
+  status             SubscriptionStatus @default(TRIALING)
+
+  trialEndsAt        DateTime?
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean            @default(false)
+  canceledAt         DateTime?
+
+  promoCodeId        String?
+  promoCode          PromoCode?         @relation(fields: [promoCodeId], references: [code])
+
+  lastChargeAt       DateTime?
+  nextChargeAt       DateTime?
+  failedAttempts     Int                @default(0)
+
+  healthScore        Int                @default(100)
+  lastHealthAt       DateTime?
+
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  invoices           Invoice[]
+
+  @@index([status, nextChargeAt])
+  @@index([trialEndsAt, status])
+}
+
+model Invoice {
+  id                String        @id @default(cuid())
+  subscriptionId    String
+  subscription      Subscription  @relation(fields: [subscriptionId], references: [id])
+  amountKesCents    Int
+  periodStart       DateTime
+  periodEnd         DateTime
+  status            InvoiceStatus @default(OPEN)
+  dueAt             DateTime
+  paidAt            DateTime?
+
+  stkCheckoutId     String?
+  stkMerchantId     String?       @unique
+  mpesaReceipt      String?
+  attempts          Int           @default(0)
+  lastAttemptAt     DateTime?
+  failedReason      String?
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([subscriptionId, periodStart])
+  @@index([status, dueAt])
+}
+
+model PromoCode {
+  code             String   @id
+  description      String?
+  discountPct      Int      @default(0)
+  freeMonths       Int      @default(0)
+  expiresAt        DateTime?
+  maxRedemptions   Int?
+  redemptions      Int      @default(0)
+  appliesToTiers   PlanTier[] @default([])
+  createdAt        DateTime @default(now())
+
+  subscriptions    Subscription[]
+
+  @@index([expiresAt])
+}
+
+// =====================================================
+// AUTONOMOUS CLIENT MANAGEMENT
+// =====================================================
+
+enum AgentTaskKind {
+  ONBOARDING_NUDGE
+  TRIAL_ENDING_3_DAYS
+  TRIAL_ENDING_TODAY
+  TRIAL_ENDED
+  PAYMENT_FAILED_RETRY
+  PAYMENT_FAILED_FINAL
+  CHURN_RISK
+  UPSELL_OPPORTUNITY
+  WIN_BACK
+  RENEWAL_REMINDER
+  MANUAL
+}
+
+enum AgentTaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+  REVIEW_NEEDED
+}
+
+model AgentTask {
+  id              String          @id @default(cuid())
+  userId          String
+  kind            AgentTaskKind
+  status          AgentTaskStatus @default(PENDING)
+  dueAt           DateTime
+  priority        Int             @default(50)
+
+  payload         Json?
+  aiDraft         Json?
+  aiConfidence    Float?
+
+  channelsTried   String[]        @default([])
+  resultNote      String?         @db.Text
+
+  completedAt     DateTime?
+  canceledAt      DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([status, dueAt])
+  @@index([userId, kind])
+}
+
+// =====================================================
+// CHAT — conversations between tenants and agents
+// =====================================================
+
+model Conversation {
+  id                String   @id @default(cuid())
+  listingId         String?
+  tenantId          String
+  agentId           String
+  lastMessageAt     DateTime @default(now())
+  lastReadByTenant  DateTime?
+  lastReadByAgent   DateTime?
+  archivedByTenant  Boolean  @default(false)
+  archivedByAgent   Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  messages          Message[]
+
+  @@unique([listingId, tenantId, agentId])
+  @@index([tenantId, lastMessageAt])
+  @@index([agentId, lastMessageAt])
+}
+
+model Message {
+  id              String   @id @default(cuid())
+  conversationId  String
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId        String
+  body            String   @db.Text
+  attachmentKeys  String[] @default([])
+  aiSuggestion    Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// =====================================================
+// REVIEWS — listings, agents, tenants
+// =====================================================
+
+enum ReviewKind {
+  LISTING
+  AGENT
+  TENANT
+}
+
+model Review {
+  id              String     @id @default(cuid())
+  kind            ReviewKind
+  authorId        String
+  targetUserId    String?
+  targetListingId String?
+  rating          Int
+  body            String?    @db.Text
+  hidden          Boolean    @default(false)
+  verified        Boolean    @default(false)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([kind, targetUserId])
+  @@index([kind, targetListingId])
+  @@index([authorId])
+}
+
+// =====================================================
+// REFERRALS
+// =====================================================
+
+model ReferralCode {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  ownerId         String
+  rewardKesCents  Int      @default(0)
+  rewardFreeMonths Int     @default(1)
+  redeemerDiscountPct Int  @default(20)
+  redeemerFreeMonths  Int  @default(0)
+  expiresAt       DateTime?
+  maxRedemptions  Int?
+  redemptions     Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  redemptionLogs  ReferralRedemption[]
+
+  @@index([ownerId])
+}
+
+model ReferralRedemption {
+  id              String   @id @default(cuid())
+  codeId          String
+  code            ReferralCode @relation(fields: [codeId], references: [id])
+  redeemedById    String   @unique
+  redeemedAt      DateTime @default(now())
+  rewardPaidAt    DateTime?
+
+  @@index([codeId])
+}

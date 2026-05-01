@@ -41,6 +41,8 @@ export default function AdminDashboard() {
 
       <nav className="flex flex-wrap gap-2 text-sm">
         {[
+          ["/admin/subscriptions", "Subscriptions"],
+          ["/admin/agent-tasks", "CRM queue"],
           ["/admin/leads", "Leads"],
           ["/admin/campaigns", "Campaigns"],
           ["/admin/reports", "Fraud reports"],
