@@ -54,9 +54,17 @@ export default function AgentDashboard() {
           <h1 className="text-3xl font-bold">My listings</h1>
           <p className="text-ink-600">Hi {user?.name ?? "there"} — let&apos;s get your properties in front of tenants.</p>
         </div>
-        <Link href="/agent/new" className="rounded-lg bg-brand-500 px-4 py-2 font-semibold text-white hover:bg-brand-600">
-          + New listing
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/agent/analytics" className="rounded-lg border border-ink-300 bg-white px-4 py-2 font-medium hover:bg-ink-50">
+            Analytics
+          </Link>
+          <Link href="/agent/inbox" className="rounded-lg border border-ink-300 bg-white px-4 py-2 font-medium hover:bg-ink-50">
+            Inbox
+          </Link>
+          <Link href="/agent/new" className="rounded-lg bg-brand-500 px-4 py-2 font-semibold text-white hover:bg-brand-600">
+            + New listing
+          </Link>
+        </div>
       </div>
 
       {user?.verificationStatus !== "VERIFIED" && (

@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { api, type SearchResult } from "@/lib/api";
+import { api, getToken, type SearchResult } from "@/lib/api";
 import { formatKes, photoUrl } from "@/lib/format";
+import MapView from "@/components/MapView";
+import { ListingCardSkeleton } from "@/components/Skeleton";
+import { toast } from "@/components/Toast";
 
 export default function SearchPage() {
   const params = useSearchParams();
@@ -13,7 +16,8 @@ export default function SearchPage() {
   const [data, setData] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [query, setQuery] = useState(q);
+  const [, setQuery] = useState(q);
+  const [view, setView] = useState<"grid" | "map">("grid");
 
   useEffect(() => {
     if (!q) return;
@@ -24,6 +28,33 @@ export default function SearchPage() {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [q]);
+
+  async function saveSearch() {
+    if (!getToken()) {
+      window.location.href = "/login?next=/search?q=" + encodeURIComponent(q);
+      return;
+    }
+    if (!data?.filters) return;
+    try {
+      await api("/v1/saved-searches", {
+        method: "POST",
+        body: {
+          name: q.slice(0, 80) || "My search",
+          query: q,
+          neighborhoods: data.filters.neighborhoods,
+          bedroomsMin: data.filters.bedroomsMin ?? undefined,
+          bedroomsMax: data.filters.bedroomsMax ?? undefined,
+          rentMaxKesCents: data.filters.rentMaxKes ? data.filters.rentMaxKes * 100 : undefined,
+          mustHave: data.filters.mustHave,
+          alertPush: true,
+          alertSms: false,
+        },
+      });
+      toast.success("Alert created — we'll notify you of new matches");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Couldn't save");
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -60,7 +91,28 @@ export default function SearchPage() {
         </div>
       )}
 
-      {loading && <SkeletonGrid />}
+      {data && data.results.length > 0 && (
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-sm text-ink-500">{data.results.length} {data.results.length === 1 ? "match" : "matches"}</p>
+          <div className="flex gap-2">
+            <button onClick={saveSearch} className="rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-100">
+              ♡ Save this search
+            </button>
+            <div className="inline-flex overflow-hidden rounded-lg border border-ink-200 bg-white text-sm">
+              <button onClick={() => setView("grid")} aria-pressed={view === "grid"}
+                className={`px-3 py-1.5 ${view === "grid" ? "bg-ink-900 text-white" : "text-ink-700 hover:bg-ink-50"}`}>Grid</button>
+              <button onClick={() => setView("map")} aria-pressed={view === "map"}
+                className={`px-3 py-1.5 ${view === "map" ? "bg-ink-900 text-white" : "text-ink-700 hover:bg-ink-50"}`}>Map</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {loading && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => <ListingCardSkeleton key={i} />)}
+        </div>
+      )}
       {error && <div className="rounded-lg bg-red-50 p-4 text-red-700 ring-1 ring-red-200">{error}</div>}
 
       {data && data.results.length === 0 && !loading && (
@@ -69,7 +121,11 @@ export default function SearchPage() {
         </div>
       )}
 
-      {data && data.results.length > 0 && (
+      {data && data.results.length > 0 && view === "map" && (
+        <MapView items={data.results} />
+      )}
+
+      {data && data.results.length > 0 && view === "grid" && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {data.results.map((r) => (
             <Link key={r.id} href={`/listing/${r.id}`} className="group overflow-hidden rounded-xl border border-ink-200 bg-white transition hover:shadow-md">
@@ -88,22 +144,6 @@ export default function SearchPage() {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-function SkeletonGrid() {
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="overflow-hidden rounded-xl border border-ink-200 bg-white">
-          <div className="h-48 animate-pulse bg-ink-100" />
-          <div className="space-y-2 p-4">
-            <div className="h-4 w-2/3 animate-pulse rounded bg-ink-100" />
-            <div className="h-3 w-1/2 animate-pulse rounded bg-ink-100" />
-          </div>
-        </div>
-      ))}
     </div>
   );
 }

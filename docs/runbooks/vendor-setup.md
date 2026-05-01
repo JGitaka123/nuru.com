@@ -151,14 +151,24 @@ the developer needs to complete before going live. Most items have lead times
 
 ---
 
-## 6. Resend (email) — optional, 30 min
+## 6. Resend (email) — required for marketing engine, 30 min + DNS warm-up
 
 1. Sign up at <https://resend.com>.
 2. Add domain `nuru.com`. Add the SPF + DKIM DNS records they show you
    (Cloudflare can do this in 2 min).
 3. Verify the domain.
 4. Generate API key. Set `RESEND_API_KEY=re_...`.
-5. Set the from-address: `noreply@nuru.com` and configure DMARC to `quarantine`.
+5. Set `EMAIL_FROM="Nuru <noreply@nuru.com>"` and `EMAIL_REPLY_TO=hello@nuru.com`.
+6. Configure DMARC to `quarantine` (TXT record `_dmarc.nuru.com` →
+   `v=DMARC1; p=quarantine; rua=mailto:dmarc@nuru.com`).
+7. **Webhook**: Resend dashboard → Webhooks → Add endpoint
+   `https://api.nuru.com/v1/webhooks/resend`. Subscribe to: `email.delivered`,
+   `email.opened`, `email.clicked`, `email.bounced`, `email.complained`.
+8. **Warm-up the domain** before running campaigns at scale: send 30-50
+   transactional emails/day for the first week (OTP, viewing reminders).
+   Skip directly to bulk marketing → expect spam-folder placement.
+9. Marketing compliance — add the **physical address** the footer mentions
+   (currently "Westlands, Nairobi") to your Resend account profile.
 
 ---
 

@@ -58,3 +58,15 @@ export interface MarketIntelJob {
   date?: string;
 }
 export const marketIntelQueue = new Queue<MarketIntelJob>("market-intel", baseOpts);
+
+export interface OutreachSendJob {
+  /** Drain QUEUED emails for this campaign (or all if null). */
+  campaignId: string | null;
+}
+export const outreachSendQueue = new Queue<OutreachSendJob>("outreach-send", baseOpts);
+
+export interface SearchAlertJob {
+  /** Listing that just published — match against active SavedSearches. */
+  listingId: string;
+}
+export const searchAlertQueue = new Queue<SearchAlertJob>("search-alerts", baseOpts);

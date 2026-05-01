@@ -128,6 +128,13 @@ export async function transitionListing(
       targetType: "listing",
       targetId: listingId,
     });
+    // Fan out to saved-search alerts.
+    const { searchAlertQueue } = await import("../workers/queues");
+    await searchAlertQueue.add(
+      "match",
+      { listingId },
+      { jobId: `alert:${listingId}` },
+    ).catch(() => undefined);
   }
   return updated;
 }

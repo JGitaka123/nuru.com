@@ -12,6 +12,8 @@ import { startViewingReminderWorker } from "./viewing-reminders";
 import { startFraudRescoreWorker } from "./fraud-rescore";
 import { startEventProcessorWorker } from "./event-processor";
 import { startMarketIntelWorker } from "./market-intel";
+import { startOutreachSenderWorker } from "./outreach-sender";
+import { startSearchAlertWorker } from "./search-alert";
 import { marketIntelQueue } from "./queues";
 
 const FILTER = (process.env.WORKER_FILTER ?? "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -50,6 +52,14 @@ async function main() {
       {},
       { repeat: { pattern: "0 3 * * *" }, jobId: "market-intel:daily" },
     ).catch((e) => logger.warn({ err: e }, "could not schedule market-intel"));
+  }
+  if (enabled("outreach-send")) {
+    const w = startOutreachSenderWorker();
+    workers.push({ name: "outreach-send", close: () => w.close() });
+  }
+  if (enabled("search-alerts")) {
+    const w = startSearchAlertWorker();
+    workers.push({ name: "search-alerts", close: () => w.close() });
   }
   logger.info({ workers: workers.map((w) => w.name) }, "workers started");
 }

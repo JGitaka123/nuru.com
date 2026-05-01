@@ -536,3 +536,170 @@ model SavedListing {
   @@index([userId])
   @@index([listingId])
 }
+
+// Saved search — tenant defines a query, gets alerts on new matches.
+model SavedSearch {
+  id              String   @id @default(cuid())
+  userId          String
+  name            String
+  query           String?
+  neighborhoods   String[] @default([])
+  bedroomsMin     Int?
+  bedroomsMax     Int?
+  rentMaxKesCents Int?
+  rentMinKesCents Int?
+  mustHave        String[] @default([])
+  alertPush       Boolean  @default(true)
+  alertSms        Boolean  @default(false)
+  alertEmail      Boolean  @default(false)
+  lastMatchAt     DateTime?
+  // High water mark — only alert on listings with publishedAt > this.
+  lastSeenAt      DateTime @default(now())
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, isActive])
+  @@index([isActive, lastSeenAt])
+}
+
+// =====================================================
+// MARKETING / OUTREACH
+// =====================================================
+
+enum LeadType {
+  AUCTIONEER
+  BANK
+  AGENT_AGENCY
+  LANDLORD
+  DEVELOPER
+  COURT
+  OTHER
+}
+
+enum LeadStage {
+  NEW
+  ENRICHED
+  QUALIFIED
+  CONTACTED
+  ENGAGED
+  ONBOARDED
+  REJECTED
+  UNSUBSCRIBED
+  BOUNCED
+}
+
+model Lead {
+  id              String     @id @default(cuid())
+  type            LeadType
+  stage           LeadStage  @default(NEW)
+  organizationName String
+  contactName     String?
+  email           String?    @unique
+  phoneE164       String?
+  websiteUrl      String?
+  city            String?
+  estimatedListingsCount Int?
+  signalNotes     String?    @db.Text
+  source          String     // gazette | bank-website | rss | manual | csv:filename
+  sourceUrl       String?
+  aiQualificationScore Float?
+  aiQualificationNotes String? @db.Text
+  firstContactedAt DateTime?
+  lastContactedAt  DateTime?
+  onboardedUserId  String?
+  rejectedReason   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  emails          OutreachEmail[]
+  responses       OutreachResponse[]
+
+  @@index([type, stage])
+  @@index([city, stage])
+  @@index([source])
+}
+
+enum OutreachStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  REPLIED
+  BOUNCED
+  COMPLAINED
+  FAILED
+  SUPPRESSED
+}
+
+model OutreachCampaign {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?  @db.Text
+  targetTypes     LeadType[]
+  targetCities    String[] @default([])
+  targetStages    LeadStage[] @default([QUALIFIED])
+  templatePromptKey String  // e.g. "bank_auction_v1", "agent_warm_v1"
+  dailyCap        Int      @default(100)
+  isActive        Boolean  @default(false)
+  startedAt       DateTime?
+  endedAt         DateTime?
+  createdAt       DateTime @default(now())
+
+  emails          OutreachEmail[]
+
+  @@index([isActive])
+}
+
+model OutreachEmail {
+  id              String   @id @default(cuid())
+  leadId          String
+  lead            Lead     @relation(fields: [leadId], references: [id])
+  campaignId      String?
+  campaign        OutreachCampaign? @relation(fields: [campaignId], references: [id])
+  subject         String
+  bodyText        String   @db.Text
+  bodyHtml        String?  @db.Text
+  templatePromptKey String
+  promptVersionId String?
+  status          OutreachStatus @default(QUEUED)
+  resendId        String?
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  openedAt        DateTime?
+  clickedAt       DateTime?
+  bouncedAt       DateTime?
+  failedReason    String?
+  suppressed      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([leadId, createdAt])
+  @@index([campaignId, status])
+  @@index([status, createdAt])
+}
+
+model OutreachResponse {
+  id              String   @id @default(cuid())
+  leadId          String
+  lead            Lead     @relation(fields: [leadId], references: [id])
+  channel         String   // email | phone | inbound_form
+  body            String?  @db.Text
+  receivedAt      DateTime @default(now())
+  intent          String?  // interested | not_interested | needs_info | unsubscribe
+  createdAt       DateTime @default(now())
+
+  @@index([leadId, receivedAt])
+}
+
+// Permanent opt-out list. Email here ⇒ suppress all future sends.
+model SuppressionList {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  reason          String   // unsubscribe | bounce_hard | complaint | manual
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  @@index([email])
+}

@@ -13,6 +13,8 @@ import { DarajaClient } from "../services/mpesa";
 import { handleStkCallback } from "../services/escrow";
 import { handleB2CResult, handleB2CTimeout } from "../services/escrow-result";
 import { parseInboundMessages, verifyWebhookSignature } from "../services/whatsapp";
+import { applyResendEvent } from "../services/outreach";
+import { suppress } from "../services/email";
 import { logger } from "../lib/logger";
 
 export async function webhookRoutes(app: FastifyInstance) {
@@ -57,6 +59,28 @@ export async function webhookRoutes(app: FastifyInstance) {
       return reply.code(200).send(q["hub.challenge"] ?? "");
     }
     return reply.code(403).send();
+  });
+
+  // Resend webhooks: open / click / bounce / complaint.
+  // Configure Resend dashboard → Webhooks to POST here. Optional: HMAC
+  // signature verification (RESEND_WEBHOOK_SECRET) — TODO once Resend
+  // adds a stable header format.
+  app.post("/v1/webhooks/resend", async (req, reply) => {
+    reply.code(200).send();
+    try {
+      const body = req.body as { type?: string; data?: { to?: string[] } };
+      // Hard bounces + complaints suppress the recipient permanently.
+      if ((body.type === "email.bounced" || body.type === "email.complained") && body.data?.to?.[0]) {
+        await suppress(
+          body.data.to[0],
+          body.type === "email.complained" ? "complaint" : "bounce_hard",
+          `via resend webhook ${body.type}`,
+        );
+      }
+      await applyResendEvent(req.body);
+    } catch (e) {
+      logger.error({ err: e }, "resend webhook handling failed");
+    }
   });
 
   // WhatsApp inbound messages.

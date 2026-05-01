@@ -3,25 +3,49 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { api, type Listing } from "@/lib/api";
-import { formatKes, formatCategory, photoUrl } from "@/lib/format";
+import { formatKes, formatCategory } from "@/lib/format";
 import SaveButton from "@/components/SaveButton";
 import SimilarListings from "@/components/SimilarListings";
+import ImageGallery from "@/components/ImageGallery";
+import { Skeleton } from "@/components/Skeleton";
+
+interface MarketCmp {
+  hasBand: boolean;
+  band?: { median: number; p25: number; p75: number; sampleSize: number };
+  ratio?: number;
+  label?: "below" | "at" | "above";
+  percentDiff?: number;
+}
 
 export default function ListingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [listing, setListing] = useState<Listing | null>(null);
+  const [market, setMarket] = useState<MarketCmp | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api<Listing>(`/v1/listings/${id}`, { auth: false })
       .then(setListing)
       .catch((e) => setError(e.message));
+    api<MarketCmp>(`/v1/listings/${id}/market`, { auth: false })
+      .then(setMarket)
+      .catch(() => setMarket(null));
   }, [id]);
 
   if (error) return <div className="rounded-lg bg-red-50 p-4 text-red-700">{error}</div>;
-  if (!listing) return <div className="text-ink-500">Loading…</div>;
+  if (!listing) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-2/3" />
+        <Skeleton className="aspect-[16/10] w-full" />
+        <Skeleton className="h-24 w-full" />
+      </div>
+    );
+  }
 
-  const main = photoUrl(listing.primaryPhotoKey ?? listing.photoKeys[0]);
+  const allKeys = listing.primaryPhotoKey
+    ? [listing.primaryPhotoKey, ...listing.photoKeys.filter((k) => k !== listing.primaryPhotoKey)]
+    : listing.photoKeys;
 
   return (
     <article className="space-y-6">
@@ -40,10 +64,7 @@ export default function ListingPage({ params }: { params: Promise<{ id: string }
         <SaveButton listingId={listing.id} />
       </header>
 
-      {main && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={main} alt={listing.title} className="aspect-[16/10] w-full rounded-xl object-cover" />
-      )}
+      <ImageGallery keys={allKeys} alt={listing.title} />
 
       <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
         <div className="space-y-4">
@@ -64,6 +85,17 @@ export default function ListingPage({ params }: { params: Promise<{ id: string }
           <div>
             <p className="text-sm text-ink-500">Rent</p>
             <p className="text-2xl font-bold">{formatKes(listing.rentKesCents)}/mo</p>
+            {market?.hasBand && market.label && (
+              <p className={`mt-1 text-xs font-medium ${
+                market.label === "below" ? "text-green-700" :
+                market.label === "above" ? "text-amber-700" : "text-ink-500"
+              }`}>
+                {market.label === "below" && `${Math.round(Math.abs(market.percentDiff!))}% below market`}
+                {market.label === "at" && `Around market rate`}
+                {market.label === "above" && `${Math.round(market.percentDiff!)}% above market`}
+                <span className="text-ink-500"> (median {formatKes(market.band!.median)})</span>
+              </p>
+            )}
           </div>
           <div>
             <p className="text-sm text-ink-500">Deposit</p>
