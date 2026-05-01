@@ -37,3 +37,24 @@ export interface FraudRescoreJob {
   listingId: string | null;
 }
 export const fraudRescoreQueue = new Queue<FraudRescoreJob>("fraud-rescore", baseOpts);
+
+// ML / analytics queues.
+export interface EventJob {
+  type: string;
+  actorId: string | null;
+  actorRole: string | null;
+  targetType: string | null;
+  targetId: string | null;
+  properties: Record<string, unknown> | undefined;
+  variantKey: string | null;
+  sessionId: string | null;
+  ipHash: string | null;
+  userAgent: string | null;
+}
+export const eventQueue = new Queue<EventJob>("events", baseOpts);
+
+export interface MarketIntelJob {
+  /** YYYY-MM-DD; defaults to today UTC. */
+  date?: string;
+}
+export const marketIntelQueue = new Queue<MarketIntelJob>("market-intel", baseOpts);

@@ -13,6 +13,7 @@ import { sendSms } from "./notifications";
 import { toDisplay } from "../lib/phone";
 import { logger } from "../lib/logger";
 import { viewingReminderQueue } from "../workers/queues";
+import { recordEvent } from "./events";
 
 export const BookingInputSchema = z.object({
   listingId: z.string().min(1),
@@ -57,6 +58,15 @@ export async function bookViewing(tenantId: string, input: z.infer<typeof Bookin
       notes: data.notes,
       status: "REQUESTED",
     },
+  });
+
+  recordEvent({
+    type: "viewing_book",
+    actorId: tenantId,
+    actorRole: "TENANT",
+    targetType: "viewing",
+    targetId: viewing.id,
+    properties: { listingId: data.listingId },
   });
 
   // Notify the agent.

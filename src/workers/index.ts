@@ -10,6 +10,9 @@ import { startListingEnrichmentWorker } from "./listing-enrichment";
 import { startEscrowReleaseWorker } from "./escrow-release";
 import { startViewingReminderWorker } from "./viewing-reminders";
 import { startFraudRescoreWorker } from "./fraud-rescore";
+import { startEventProcessorWorker } from "./event-processor";
+import { startMarketIntelWorker } from "./market-intel";
+import { marketIntelQueue } from "./queues";
 
 const FILTER = (process.env.WORKER_FILTER ?? "").split(",").map((s) => s.trim()).filter(Boolean);
 const enabled = (name: string) => FILTER.length === 0 || FILTER.includes(name);
@@ -32,6 +35,21 @@ async function main() {
   if (enabled("fraud-rescore")) {
     const w = startFraudRescoreWorker();
     workers.push({ name: "fraud-rescore", close: () => w.close() });
+  }
+  if (enabled("events")) {
+    const w = startEventProcessorWorker();
+    workers.push({ name: "events", close: () => w.close() });
+  }
+  if (enabled("market-intel")) {
+    const w = startMarketIntelWorker();
+    workers.push({ name: "market-intel", close: () => w.close() });
+
+    // Schedule daily run at 03:00 UTC. Idempotent (unique constraint).
+    await marketIntelQueue.add(
+      "daily",
+      {},
+      { repeat: { pattern: "0 3 * * *" }, jobId: "market-intel:daily" },
+    ).catch((e) => logger.warn({ err: e }, "could not schedule market-intel"));
   }
   logger.info({ workers: workers.map((w) => w.name) }, "workers started");
 }

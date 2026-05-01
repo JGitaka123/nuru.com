@@ -18,6 +18,7 @@ import { z } from "zod";
 import { prisma } from "../db/client";
 import { parseSearchQuery } from "../prompts/search-parser";
 import { embed, rerank } from "../services/inference";
+import { recordEvent } from "../services/events";
 
 const QuerySchema = z.object({
   q: z.string().min(1).max(500),
@@ -125,6 +126,25 @@ export async function searchRoutes(app: FastifyInstance) {
       ...candidates[r.index],
       relevance: r.score,
     }));
+
+    recordEvent({
+      type: "search",
+      actorId: req.user?.sub ?? null,
+      actorRole: req.user?.role ?? null,
+      targetType: "search",
+      targetId: null,
+      properties: {
+        q,
+        language: f.detectedLanguage,
+        neighborhoods: f.neighborhoods,
+        rentMaxKes: f.rentMaxKes,
+        bedroomsMin: f.bedroomsMin,
+        mustHave: f.mustHave,
+        resultCount: results.length,
+      },
+      ip: req.ip,
+      userAgent: req.headers["user-agent"] ?? null,
+    });
 
     return reply.send({
       filters: f,

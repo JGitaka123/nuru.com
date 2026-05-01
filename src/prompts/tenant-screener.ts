@@ -92,7 +92,8 @@ shows.
 `.trim();
 
 export async function screenTenant(
-  data: ApplicationData
+  data: ApplicationData,
+  meta?: { actorId?: string | null; targetId?: string | null },
 ): Promise<RunResult<ScreeningSummary>> {
   // Only include the fields we want the model to reason on. Strip any
   // protected attributes that may have leaked into the application object.
@@ -109,6 +110,9 @@ export async function screenTenant(
     ],
     jsonMode: true,
     maxOutputTokens: 800,
+    actorId: meta?.actorId ?? null,
+    targetType: "application",
+    targetId: meta?.targetId ?? null,
   });
 
   const parsed = ScreeningSummarySchema.parse(result.content);

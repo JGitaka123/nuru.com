@@ -20,6 +20,7 @@ import {
 } from "../services/listings";
 import { listingEnrichmentQueue } from "../workers/queues";
 import { ValidationError } from "../lib/errors";
+import { recordEvent } from "../services/events";
 
 const PublicQuery = z.object({
   neighborhood: z.string().optional(),
@@ -76,6 +77,15 @@ export async function listingRoutes(app: FastifyInstance) {
   app.get("/v1/listings/:id", async (req, reply) => {
     const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
     const listing = await getListing(id);
+    recordEvent({
+      type: "listing_view",
+      actorId: req.user?.sub ?? null,
+      actorRole: req.user?.role ?? null,
+      targetType: "listing",
+      targetId: id,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"] ?? null,
+    });
     return reply.send(listing);
   });
 

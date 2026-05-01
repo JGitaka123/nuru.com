@@ -12,6 +12,7 @@
 import { prisma } from "../db/client";
 import { logger } from "../lib/logger";
 import { sendSms } from "./notifications";
+import { recordEvent } from "./events";
 
 interface DarajaResult {
   Result?: {
@@ -63,6 +64,14 @@ export async function handleB2CResult(payload: unknown): Promise<void> {
       escrow.lease.landlord.phoneE164,
       `Nuru: Deposit of KES ${Math.round((escrow.amountKesCents - escrow.feeKesCents) / 100)} has been sent to your M-Pesa for "${escrow.lease.listing.title}".`,
     ).catch(() => undefined);
+    recordEvent({
+      type: "escrow_released",
+      actorId: escrow.lease.landlordId,
+      actorRole: "LANDLORD",
+      targetType: "escrow",
+      targetId: escrow.id,
+      properties: { leaseId: escrow.leaseId, listingId: escrow.lease.listingId },
+    });
     logger.info({ escrowId: escrow.id }, "escrow released");
   } else {
     // Allow retry by clearing the conversation id.

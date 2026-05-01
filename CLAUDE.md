@@ -126,6 +126,19 @@ comment above the call.
 - [x] Admin endpoints — verification queue, risky-listing review, metrics, force-status
 - [x] CORS + Helmet on the API; behind-Cloudflare trustProxy
 - [x] Web pages: apply, my-applications, my-leases, lease detail (sign + STK + confirm), agent inbox + applications review
+- [x] **ML feedback loop** — Event capture (BullMQ-backed, batched insert),
+      AiOutput + AiFeedback + PromptVersion models; router auto-versions
+      prompts and supports A/B canary rollouts via deterministic hashing
+- [x] **Recommendations** — `/v1/listings/:id/similar` (pgvector cosine);
+      `/v1/recommendations` (centroid of user's interactions); cold-start fallback
+- [x] **Market intelligence** — daily worker computes MarketStat per
+      (neighborhood, category, bedrooms): rent median + P25/P75 + days-to-rent +
+      activity ratios; `/v1/listings/:id/market` exposes price comparison
+- [x] **Saved listings** — favorites with heart button + dedicated page
+- [x] **Admin funnel** — `/v1/admin/funnel` counts events at each stage
+- [x] Health check pings DB + Redis + inference; graceful shutdown
+- [x] ADR-002 documents the ML layer; eval-mining script (`pnpm ai:mine-evals`)
+- [x] `prisma/migrations/` scaffold + deployment-time `prisma migrate dev --name init`
 - [ ] Apply Prisma migrations against a real DB (deployment time)
 - [ ] Approve "NURU" sender ID with Africa's Talking (3 days lead time)
 - [ ] Approve Daraja B2C production access (~3 weeks lead time)

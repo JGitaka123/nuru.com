@@ -15,6 +15,7 @@ import { prisma } from "../db/client";
 import { ConflictError, ForbiddenError, NotFoundError } from "../lib/errors";
 import { sendSms } from "./notifications";
 import { logger } from "../lib/logger";
+import { recordEvent } from "./events";
 
 export const InquiryInputSchema = z.object({
   listingId: z.string().min(1),
@@ -51,6 +52,15 @@ export async function createInquiry(tenantId: string, input: z.infer<typeof Inqu
     listing.agent.phoneE164,
     `Nuru: New inquiry on "${listing.title.slice(0, 40)}". Reply in the app: nuru.com/agent`,
   ).catch((e) => logger.warn({ err: e }, "agent sms failed"));
+
+  recordEvent({
+    type: "inquiry_submit",
+    actorId: tenantId,
+    actorRole: "TENANT",
+    targetType: "listing",
+    targetId: data.listingId,
+    properties: { channel: data.channel, hasMessage: !!data.message },
+  });
 
   return inquiry;
 }

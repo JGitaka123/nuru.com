@@ -4,6 +4,8 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { api, type Listing } from "@/lib/api";
 import { formatKes, formatCategory, photoUrl } from "@/lib/format";
+import SaveButton from "@/components/SaveButton";
+import SimilarListings from "@/components/SimilarListings";
 
 export default function ListingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -23,16 +25,19 @@ export default function ListingPage({ params }: { params: Promise<{ id: string }
 
   return (
     <article className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-bold">{listing.title}</h1>
-        <p className="text-ink-600">
-          {listing.neighborhood}{listing.estate ? ` · ${listing.estate}` : ""} · {formatCategory(listing.category)}
-        </p>
-        {listing.verificationStatus === "VERIFIED" && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
-            ✓ Verified by Nuru
-          </span>
-        )}
+      <header className="flex items-start justify-between gap-4">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">{listing.title}</h1>
+          <p className="text-ink-600">
+            {listing.neighborhood}{listing.estate ? ` · ${listing.estate}` : ""} · {formatCategory(listing.category)}
+          </p>
+          {listing.verificationStatus === "VERIFIED" && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-800">
+              ✓ Verified by Nuru
+            </span>
+          )}
+        </div>
+        <SaveButton listingId={listing.id} />
       </header>
 
       {main && (
@@ -90,6 +95,8 @@ export default function ListingPage({ params }: { params: Promise<{ id: string }
           )}
         </aside>
       </div>
+
+      <SimilarListings listingId={listing.id} />
     </article>
   );
 }

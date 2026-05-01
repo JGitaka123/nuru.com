@@ -19,6 +19,7 @@ import { logger } from "../lib/logger";
 import { sendSms } from "./notifications";
 import { escrowReleaseQueue } from "../workers/queues";
 import { ConflictError, NotFoundError } from "../lib/errors";
+import { recordEvent } from "./events";
 
 export interface InitiateDepositInput {
   leaseId: string;
@@ -70,6 +71,15 @@ export async function initiateDeposit(input: InitiateDepositInput) {
         create: { type: "stk_initiated", payload: stk as any },
       },
     },
+  });
+
+  recordEvent({
+    type: "escrow_initiated",
+    actorId: lease.tenantId,
+    actorRole: "TENANT",
+    targetType: "escrow",
+    targetId: escrow.id,
+    properties: { leaseId: lease.id, amountKesCents: input.depositKesCents },
   });
 
   return { escrowId: escrow.id, customerMessage: stk.customerMessage };
@@ -131,6 +141,15 @@ export async function handleStkCallback(cb: StkCallbackPayload) {
       `Nuru: Deposit received and held in escrow for "${escrow.lease.listing.title}". ` +
         `It will be released after the tenant confirms move-in.`
     ).catch((e) => logger.error(e, "landlord sms failed"));
+
+    recordEvent({
+      type: "escrow_held",
+      actorId: escrow.lease.tenantId,
+      actorRole: "TENANT",
+      targetType: "escrow",
+      targetId: escrow.id,
+      properties: { leaseId: escrow.leaseId, listingId: escrow.lease.listingId },
+    });
   } else {
     // Failure path: ResultCode != 0 means tenant cancelled, timed out,
     // wrong PIN, insufficient funds, etc.

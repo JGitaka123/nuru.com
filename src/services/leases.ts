@@ -16,6 +16,7 @@ import { z } from "zod";
 import type { UserRole } from "@prisma/client";
 import { prisma } from "../db/client";
 import { ForbiddenError, NotFoundError, ConflictError } from "../lib/errors";
+import { recordEvent } from "./events";
 
 export const SignSchema = z.object({
   asRole: z.enum(["TENANT", "LANDLORD"]),
@@ -90,8 +91,8 @@ export async function disputeLease(leaseId: string, userId: string, reason: stri
   }
   if (lease.status !== "ACTIVE") throw new ConflictError(`Lease is ${lease.status}`);
 
-  return prisma.$transaction(async (tx) => {
-    const updated = await tx.lease.update({
+  const updated = await prisma.$transaction(async (tx) => {
+    const u = await tx.lease.update({
       where: { id: leaseId },
       data: { status: "DISPUTED" },
     });
@@ -104,6 +105,14 @@ export async function disputeLease(leaseId: string, userId: string, reason: stri
         },
       });
     }
-    return updated;
+    return u;
   });
+  recordEvent({
+    type: "dispute_opened",
+    actorId: userId,
+    targetType: "lease",
+    targetId: leaseId,
+    properties: { reason: reason.slice(0, 200) },
+  });
+  return updated;
 }

@@ -73,7 +73,7 @@ async function rescoreOne(listingId: string) {
     viewingsBookedCount: viewings.length,
     viewingsCompletedCount: viewings.filter((v) => v.status === "COMPLETED").length,
     reportsCount: reports,
-  });
+  }, { actorId: listing.agentId });
 
   await prisma.listing.update({
     where: { id: listingId },

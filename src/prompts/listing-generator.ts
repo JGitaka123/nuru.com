@@ -133,6 +133,8 @@ export interface GenerateListingInput {
   photoUrls: string[];           // R2 public URLs
   neighborhood: string;          // required from agent
   agentHint?: string;            // optional free-text hint
+  /** Caller context for ML capture. */
+  meta?: { actorId?: string | null; targetId?: string | null };
 }
 
 export async function generateListing(
@@ -153,6 +155,9 @@ Analyze the attached photos and produce the listing draft as JSON.
     userText,
     jsonMode: true,
     maxOutputTokens: 1500,
+    actorId: input.meta?.actorId ?? null,
+    targetType: "listing",
+    targetId: input.meta?.targetId ?? null,
   });
 
   // Validate. If the model drifts, this throws and we surface it loudly.

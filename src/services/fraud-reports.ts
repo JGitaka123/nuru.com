@@ -12,6 +12,7 @@ import { prisma } from "../db/client";
 import { ConflictError, NotFoundError, ValidationError } from "../lib/errors";
 import { fraudRescoreQueue } from "../workers/queues";
 import { logger } from "../lib/logger";
+import { recordEvent } from "./events";
 
 export const ReportSchema = z.object({
   listingId: z.string().min(1),
@@ -61,6 +62,14 @@ export async function submitReport(reporterId: string, input: z.infer<typeof Rep
     { listingId: data.listingId },
     { jobId: `rescore-${data.listingId}-${Date.now()}` },
   ).catch((e) => logger.warn({ err: e }, "could not enqueue rescore"));
+
+  recordEvent({
+    type: "fraud_reported",
+    actorId: reporterId,
+    targetType: "listing",
+    targetId: data.listingId,
+    properties: { reason: data.reason },
+  });
 
   return report;
 }

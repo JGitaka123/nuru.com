@@ -1,0 +1,11 @@
+# Prisma migrations live here.
+#
+# To create the initial migration after wiring up your DB:
+#   pnpm prisma migrate dev --name init
+#
+# That generates a timestamped subdirectory with an SQL file. Commit the
+# generated files. CI/CD then runs `pnpm db:deploy` (which calls
+# `prisma migrate deploy`) on every release.
+#
+# DO NOT edit migrations after they are committed. Create a new migration
+# to alter or roll back instead.

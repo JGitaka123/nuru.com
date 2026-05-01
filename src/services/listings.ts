@@ -17,6 +17,7 @@ import type { ListingCategory, ListingStatus, UserRole } from "@prisma/client";
 import { prisma } from "../db/client";
 import { ForbiddenError, NotFoundError, ValidationError } from "../lib/errors";
 import { logger } from "../lib/logger";
+import { recordEvent } from "./events";
 
 export const ListingInputSchema = z.object({
   title: z.string().min(5).max(120),
@@ -111,13 +112,24 @@ export async function transitionListing(
     throw new ForbiddenError(`Listing fraud score ${listing.fraudScore} is too high to publish`);
   }
 
-  return prisma.listing.update({
+  const updated = await prisma.listing.update({
     where: { id: listingId },
     data: {
       status: to,
       ...(to === "ACTIVE" && !listing.publishedAt ? { publishedAt: new Date() } : {}),
     },
   });
+
+  if (to === "ACTIVE" && !listing.publishedAt) {
+    recordEvent({
+      type: "listing_published",
+      actorId: userId,
+      actorRole: role,
+      targetType: "listing",
+      targetId: listingId,
+    });
+  }
+  return updated;
 }
 
 export async function listMyListings(agentId: string, status?: ListingStatus) {

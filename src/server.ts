@@ -17,8 +17,13 @@ import { leaseRoutes } from "./routes/leases";
 import { fraudReportRoutes } from "./routes/fraud-reports";
 import { voiceSearchRoutes } from "./routes/voice-search";
 import { adminRoutes } from "./routes/admin";
+import { aiFeedbackRoutes } from "./routes/ai-feedback";
+import { recommendationRoutes } from "./routes/recommendations";
+import { savedRoutes } from "./routes/saved";
 import { logger } from "./lib/logger";
 import { inferenceHealth } from "./services/inference";
+import { prisma } from "./db/client";
+import { redis } from "./workers/queues";
 import { AppError, toHttpError } from "./lib/errors";
 
 const app = Fastify({
@@ -65,9 +70,18 @@ app.setErrorHandler((err, _req, reply) => {
   return reply.code(500).send({ code: "INTERNAL_ERROR", message: "Internal server error" });
 });
 
-app.get("/health", async () => {
-  const inference = await inferenceHealth().catch(() => null);
-  return { status: "ok", inference, time: new Date().toISOString() };
+app.get("/health", async (_req, reply) => {
+  const [db, cache, inference] = await Promise.all([
+    prisma.$queryRaw`SELECT 1`.then(() => true).catch(() => false),
+    redis.ping().then((r) => r === "PONG").catch(() => false),
+    inferenceHealth().catch(() => null),
+  ]);
+  const ok = db && cache;
+  return reply.code(ok ? 200 : 503).send({
+    status: ok ? "ok" : "degraded",
+    db, cache, inference,
+    time: new Date().toISOString(),
+  });
 });
 
 app.register(authRoutes);
@@ -83,8 +97,27 @@ app.register(leaseRoutes);
 app.register(fraudReportRoutes);
 app.register(voiceSearchRoutes);
 app.register(adminRoutes);
+app.register(aiFeedbackRoutes);
+app.register(recommendationRoutes);
+app.register(savedRoutes);
 app.register(searchRoutes);
 app.register(webhookRoutes);
+
+// Graceful shutdown — drain in-flight requests, close DB/Redis, exit clean.
+const shutdown = async (signal: string) => {
+  logger.info({ signal }, "api shutting down");
+  try {
+    await app.close();
+    await prisma.$disconnect();
+    await redis.quit();
+  } catch (err) {
+    logger.error({ err }, "shutdown error");
+  } finally {
+    process.exit(0);
+  }
+};
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+process.on("SIGINT", () => void shutdown("SIGINT"));
 
 const port = Number(process.env.PORT ?? 4000);
 app

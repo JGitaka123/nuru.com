@@ -20,7 +20,18 @@ account/credential setup; this doc covers the recurring deploy steps.
    \q
    ```
 
-2. **Run migrations**
+2. **Generate the initial migration** (one-time, on the dev workstation
+   that has access to a fresh local DB)
+   ```bash
+   # Spin up a local Postgres with the extensions:
+   docker compose up -d postgres
+   psql "$LOCAL_DATABASE_URL" -f scripts/init-extensions.sql
+   # Generate the migration from prisma/schema.prisma:
+   DATABASE_URL=$LOCAL_DATABASE_URL pnpm prisma migrate dev --name init
+   # Commit prisma/migrations/<timestamp>_init/ and push.
+   ```
+
+3. **Run migrations against prod**
    ```bash
    DATABASE_URL=$DIRECT_URL pnpm db:deploy
    ```

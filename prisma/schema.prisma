@@ -395,3 +395,144 @@ model RentComp {
 
   @@index([neighborhood, category, bedrooms, observedAt])
 }
+
+// Daily aggregated market statistics. Computed by the market-intel worker.
+// Powers AI price suggestions, agent dashboards, and "is this priced
+// well?" indicators on the listing creator.
+model MarketStat {
+  id                String   @id @default(cuid())
+  observedDate      DateTime @db.Date  // YYYY-MM-DD partition
+  neighborhood      String
+  category          ListingCategory
+  bedrooms          Int
+  // Price band (KES cents).
+  rentMedian        Int
+  rentP25           Int
+  rentP75           Int
+  sampleSize        Int
+  // Velocity: median days from publish → rented (for listings that did rent).
+  daysToRentMedian  Int?
+  // Activity: inquiries/viewings per active listing in this segment.
+  inquiriesPerActive Float?
+  viewingsPerActive Float?
+  createdAt         DateTime @default(now())
+
+  @@unique([observedDate, neighborhood, category, bedrooms])
+  @@index([neighborhood, category, bedrooms, observedDate])
+}
+
+// =====================================================
+// ML / ANALYTICS LAYER
+// =====================================================
+
+// Generic event log. Powers funnel analysis, recommendations training,
+// and the AI feedback loop. High-volume — partition or downsample at scale.
+model Event {
+  id           String   @id @default(cuid())
+  type         String   // search, search_click, listing_view, inquiry_submit, etc.
+  actorId      String?  // user id, null for anonymous
+  actorRole    String?  // TENANT|AGENT|LANDLORD|ADMIN|null
+  targetType   String?  // listing | application | viewing | escrow | search
+  targetId     String?
+  // Free-form structured data: query string, search filters, click position, etc.
+  // Keep small; large blobs live elsewhere.
+  properties   Json?
+  // For experiments: which prompt/feature variant the actor saw.
+  variantKey   String?
+  sessionId    String?
+  ipHash       String?  // hash, not raw
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  @@index([type, createdAt])
+  @@index([actorId, createdAt])
+  @@index([targetType, targetId])
+}
+
+// Every AI call lands here. Inputs are stored as a hash + small preview to
+// avoid bloat; full input lives in the prompt cache + reproducible from
+// (promptVersion, inputHash). Outputs are stored verbatim — they're small.
+model AiOutput {
+  id              String   @id @default(cuid())
+  task            String   // listing_generate, fraud_score, etc.
+  tier            String   // haiku | sonnet | opus
+  model           String
+  promptVersionId String?
+  promptVersion   PromptVersion? @relation(fields: [promptVersionId], references: [id])
+
+  // Identity / context
+  actorId         String?
+  targetType      String?
+  targetId        String?
+  variantKey      String?  // for A/B
+
+  // Audit-friendly summaries. Full input is reconstructable from
+  // (promptVersionId + inputHash + targetId).
+  inputHash       String   // sha256 of (system + user) for dedup
+  inputPreview    String?  @db.Text  // first ~500 chars
+  output          Json     // parsed JSON OR { text: string }
+  costUsd         Float
+  latencyMs       Int
+
+  // Self-rated confidence if the prompt produces one (e.g. listing-generator).
+  confidence      Float?
+
+  createdAt       DateTime @default(now())
+
+  feedback        AiFeedback[]
+
+  @@index([task, createdAt])
+  @@index([targetType, targetId])
+  @@index([inputHash])
+}
+
+// Human grading of an AiOutput. Drives prompt iteration + active learning.
+// "edited_output" is the gold for fine-tuning / few-shot examples.
+model AiFeedback {
+  id            String   @id @default(cuid())
+  aiOutputId    String
+  aiOutput      AiOutput @relation(fields: [aiOutputId], references: [id], onDelete: Cascade)
+  graderId      String   // user id (typically ADMIN)
+  grade         String   // correct | wrong | edited | partial
+  reason        String?  @db.Text
+  editedOutput  Json?    // if grade=edited, the corrected version
+  // Used to gate "promote to eval set" decisions: high confidence cases are
+  // good for evals; low-confidence ones go to retrain candidates.
+  promoteToEval Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([aiOutputId])
+  @@index([grade, createdAt])
+}
+
+// Prompt registry. New prompt text → new row. The hash is the version id.
+// Historical AiOutputs link back to the version they used.
+model PromptVersion {
+  id           String   @id   // sha256 prefix of the prompt text
+  task         String   // listing_generate, fraud_score, etc.
+  text         String   @db.Text
+  description  String?  // human-readable change note ("v3: add Sheng examples")
+  isActive     Boolean  @default(true)
+  // Rollout fraction 0-1. 1 = full traffic; <1 = canary.
+  rollout      Float    @default(1.0)
+  createdAt    DateTime @default(now())
+  retiredAt    DateTime?
+
+  outputs      AiOutput[]
+
+  @@unique([task, id])
+  @@index([task, isActive])
+}
+
+// Tenant favorites / saved listings.
+model SavedListing {
+  id           String   @id @default(cuid())
+  userId       String
+  listingId    String
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
+}

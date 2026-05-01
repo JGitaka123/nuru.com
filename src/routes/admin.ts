@@ -12,6 +12,7 @@ import { z } from "zod";
 import { prisma } from "../db/client";
 import { requireRole } from "../lib/auth";
 import { ValidationError } from "../lib/errors";
+import { marketSnapshot } from "../services/market-intel";
 
 const ListingStatusEnum = z.enum([
   "DRAFT", "PENDING_REVIEW", "ACTIVE", "PAUSED", "RENTED", "REMOVED",
@@ -77,6 +78,62 @@ export async function adminRoutes(app: FastifyInstance) {
         last24h: { usersDay, listingsDay, viewingsDay, applicationsDay },
         operational: { escrowsHeld, leasesActive, openReports },
       });
+    },
+  );
+
+  /**
+   * Conversion funnel for the admin dashboard. Counts events of each
+   * funnel-defining type within the lookback window.
+   */
+  app.get(
+    "/v1/admin/funnel",
+    { preHandler: requireRole("ADMIN") },
+    async (req, reply) => {
+      const { days } = z.object({
+        days: z.coerce.number().int().min(1).max(90).default(7),
+      }).parse(req.query);
+      const since = new Date(Date.now() - days * 86_400_000);
+
+      const stages: Array<{ stage: string; types: string[] }> = [
+        { stage: "search",            types: ["search"] },
+        { stage: "listing_view",      types: ["listing_view"] },
+        { stage: "save",              types: ["saved_listing"] },
+        { stage: "inquiry",           types: ["inquiry_submit"] },
+        { stage: "viewing_book",      types: ["viewing_book"] },
+        { stage: "application_submit", types: ["application_submit"] },
+        { stage: "approved",          types: ["application_decided"] }, // filter below
+        { stage: "escrow_held",       types: ["escrow_held"] },
+        { stage: "escrow_released",   types: ["escrow_released"] },
+      ];
+
+      const counts: Array<{ stage: string; count: number }> = [];
+      for (const s of stages) {
+        if (s.stage === "approved") {
+          const c = await prisma.event.count({
+            where: {
+              type: "application_decided",
+              createdAt: { gte: since },
+              properties: { path: ["decision"], equals: "APPROVED" } as never,
+            },
+          });
+          counts.push({ stage: s.stage, count: c });
+        } else {
+          const c = await prisma.event.count({
+            where: { type: { in: s.types }, createdAt: { gte: since } },
+          });
+          counts.push({ stage: s.stage, count: c });
+        }
+      }
+      return reply.send({ days, since: since.toISOString(), funnel: counts });
+    },
+  );
+
+  app.get(
+    "/v1/admin/market",
+    { preHandler: requireRole("ADMIN") },
+    async (_req, reply) => {
+      const items = await marketSnapshot();
+      return reply.send({ items });
     },
   );
 

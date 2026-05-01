@@ -94,7 +94,10 @@ contact_leak, duplicate_listing, low_conversion, user_reports,
 underpriced, overpriced, sparse_listing, unverified_new_agent.
 `.trim();
 
-export async function scoreFraud(signals: FraudSignals): Promise<RunResult<FraudScore>> {
+export async function scoreFraud(
+  signals: FraudSignals,
+  meta?: { actorId?: string | null },
+): Promise<RunResult<FraudScore>> {
   const result = await run<FraudScore>({
     task: "fraud_score",
     systemPrompt: SYSTEM_PROMPT,
@@ -106,6 +109,9 @@ export async function scoreFraud(signals: FraudSignals): Promise<RunResult<Fraud
     ],
     jsonMode: true,
     maxOutputTokens: 600,
+    actorId: meta?.actorId ?? null,
+    targetType: "listing",
+    targetId: signals.listingId,
   });
 
   const parsed = FraudScoreSchema.parse(result.content);

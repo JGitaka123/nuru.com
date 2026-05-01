@@ -6,6 +6,8 @@
  *  - One place to apply prompt caching consistently.
  *  - One place to emit cost telemetry per task type.
  *  - One place to swap models when prices change or new ones ship.
+ *  - One place to capture AI outputs for the ML feedback loop.
+ *  - One place to apply prompt versioning + A/B routing.
  *
  * Rules (also documented in CLAUDE.md):
  *   Haiku  — high volume, simple extraction, classification, drafting
@@ -20,8 +22,11 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import { createHash } from "node:crypto";
 import { logger } from "../lib/logger";
 import { recordAiCost } from "../lib/metrics";
+import { prisma } from "../db/client";
+import { ensurePromptVersion, pickVariant } from "./prompt-versions";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
@@ -77,6 +82,12 @@ export interface RunOptions {
   jsonMode?: boolean;
   /** Use Batch API (50% off, async). For non-realtime workloads only. */
   batch?: boolean;
+  /** Caller-supplied context for ML capture. Strongly recommended. */
+  actorId?: string | null;
+  targetType?: string | null;
+  targetId?: string | null;
+  /** Self-reported confidence for the output, populated by callers
+   *  whose schemas include a confidence field. */
 }
 
 export interface RunResult<T = string> {
@@ -84,6 +95,10 @@ export interface RunResult<T = string> {
   raw: Anthropic.Message;
   costUsd: number;
   tier: Tier;
+  /** AiOutput row id — pass to AiFeedback when the agent edits the result. */
+  aiOutputId?: string;
+  /** Variant used (default | canary:abc123). Useful for analytics. */
+  variantKey?: string;
 }
 
 export async function run<T = string>(opts: RunOptions): Promise<RunResult<T>> {
@@ -98,26 +113,37 @@ export async function run<T = string>(opts: RunOptions): Promise<RunResult<T>> {
     }
   }
 
+  // Prompt versioning + A/B variant resolution.
+  const variant = await pickVariant({
+    task: opts.task,
+    actorKey: opts.actorId ?? opts.targetId ?? null,
+    defaultText: opts.systemPrompt,
+  }).catch((err) => {
+    // Never let versioning errors block AI calls.
+    logger.warn({ err, task: opts.task }, "pickVariant failed; using default");
+    return { id: "unversioned", text: opts.systemPrompt, variantKey: "default" };
+  });
+
   const model = MODEL_FOR_TIER[tier];
   const messages = [...opts.messages];
   if (opts.jsonMode) {
     messages.push({ role: "assistant", content: "{" });
   }
 
+  const startedAt = Date.now();
   const response = await client.messages.create({
     model,
     max_tokens: opts.maxOutputTokens ?? 1024,
-    // Cache the system prompt — saves ~90% on input cost for repeated calls.
-    // The system prompt MUST be stable across calls for this to help.
     system: [
       {
         type: "text",
-        text: opts.systemPrompt,
+        text: variant.text,
         cache_control: { type: "ephemeral" },
       },
     ],
     messages,
   });
+  const latencyMs = Date.now() - startedAt;
 
   const usage = response.usage;
   const rate = RATES[tier];
@@ -134,13 +160,37 @@ export async function run<T = string>(opts: RunOptions): Promise<RunResult<T>> {
   const text = textBlock && textBlock.type === "text" ? textBlock.text : "";
 
   if (opts.jsonMode) {
-    // Re-add the prefill we sent so the JSON parses.
     content = JSON.parse("{" + text) as T;
   } else {
     content = text as T;
   }
 
-  return { content, raw: response, costUsd, tier };
+  // Capture for the feedback loop. Fire-and-forget; never blocks the response.
+  let aiOutputId: string | undefined;
+  if (variant.id !== "unversioned") {
+    try {
+      aiOutputId = await captureOutput({
+        task: opts.task,
+        tier,
+        model,
+        promptVersionId: variant.id,
+        actorId: opts.actorId ?? null,
+        targetType: opts.targetType ?? null,
+        targetId: opts.targetId ?? null,
+        variantKey: variant.variantKey,
+        systemPrompt: variant.text,
+        userMessages: opts.messages,
+        output: content as unknown,
+        costUsd,
+        latencyMs,
+        confidence: extractConfidence(content),
+      });
+    } catch (err) {
+      logger.warn({ err, task: opts.task }, "ai output capture failed");
+    }
+  }
+
+  return { content, raw: response, costUsd, tier, aiOutputId, variantKey: variant.variantKey };
 }
 
 /**
@@ -161,4 +211,82 @@ export async function runVision<T = string>(
     ...opts,
     messages: [{ role: "user", content }],
   });
+}
+
+// ---- Internal helpers ----
+
+interface CaptureOpts {
+  task: TaskType;
+  tier: Tier;
+  model: string;
+  promptVersionId: string;
+  actorId: string | null;
+  targetType: string | null;
+  targetId: string | null;
+  variantKey: string;
+  systemPrompt: string;
+  userMessages: Anthropic.MessageParam[];
+  output: unknown;
+  costUsd: number;
+  latencyMs: number;
+  confidence: number | null;
+}
+
+async function captureOutput(c: CaptureOpts): Promise<string | undefined> {
+  // Make sure the prompt version exists (router uses it as FK).
+  await ensurePromptVersion({ task: c.task, text: c.systemPrompt }).catch(() => undefined);
+
+  const inputBuf = JSON.stringify({ s: c.systemPrompt, m: c.userMessages });
+  const inputHash = createHash("sha256").update(inputBuf).digest("hex").slice(0, 32);
+  const preview = compactPreview(c.userMessages, 500);
+
+  const row = await prisma.aiOutput.create({
+    data: {
+      task: c.task,
+      tier: c.tier,
+      model: c.model,
+      promptVersionId: c.promptVersionId,
+      actorId: c.actorId,
+      targetType: c.targetType,
+      targetId: c.targetId,
+      variantKey: c.variantKey,
+      inputHash,
+      inputPreview: preview,
+      output: serializeOutput(c.output),
+      costUsd: c.costUsd,
+      latencyMs: c.latencyMs,
+      confidence: c.confidence,
+    },
+  });
+  return row.id;
+}
+
+function serializeOutput(content: unknown): object {
+  if (typeof content === "string") return { text: content };
+  if (content && typeof content === "object") return content as object;
+  return { value: content };
+}
+
+function compactPreview(msgs: Anthropic.MessageParam[], maxChars: number): string {
+  const parts: string[] = [];
+  for (const m of msgs) {
+    if (typeof m.content === "string") {
+      parts.push(`[${m.role}] ${m.content}`);
+    } else {
+      const text = m.content
+        .map((b) => (b.type === "text" ? b.text : `[${b.type}]`))
+        .join(" ");
+      parts.push(`[${m.role}] ${text}`);
+    }
+    if (parts.join("\n").length > maxChars) break;
+  }
+  return parts.join("\n").slice(0, maxChars);
+}
+
+function extractConfidence(content: unknown): number | null {
+  if (content && typeof content === "object" && "confidence" in content) {
+    const c = (content as { confidence: unknown }).confidence;
+    if (typeof c === "number" && c >= 0 && c <= 1) return c;
+  }
+  return null;
 }

@@ -18,6 +18,7 @@ import { prisma } from "../db/client";
 import { ConflictError, ForbiddenError, NotFoundError } from "../lib/errors";
 import { screenTenant, type ApplicationData } from "../prompts/tenant-screener";
 import { logger } from "../lib/logger";
+import { recordEvent } from "./events";
 
 export const ApplicationInputSchema = z.object({
   listingId: z.string().min(1),
@@ -56,6 +57,19 @@ export async function submitApplication(tenantId: string, input: z.infer<typeof 
       references: data.references ?? null,
       documents: data.documents ?? null,
       status: "SUBMITTED",
+    },
+  });
+
+  recordEvent({
+    type: "application_submit",
+    actorId: tenantId,
+    actorRole: "TENANT",
+    targetType: "application",
+    targetId: application.id,
+    properties: {
+      listingId: data.listingId,
+      hasIncome: !!data.monthlyIncomeKesCents,
+      refsCount: data.references?.length ?? 0,
     },
   });
 
@@ -134,16 +148,23 @@ export async function decideApplication(
   }
 
   if (decision === "REJECTED") {
-    return prisma.application.update({
+    const updated = await prisma.application.update({
       where: { id: applicationId },
       data: { status: "REJECTED", decidedAt: new Date() },
     });
+    recordEvent({
+      type: "application_decided",
+      actorId: agentId, actorRole: "AGENT",
+      targetType: "application", targetId: applicationId,
+      properties: { decision: "REJECTED", listingId: app.listing.id },
+    });
+    return updated;
   }
 
   // Approval triggers Lease creation in PENDING_DEPOSIT state.
   const startDate = new Date();
-  return prisma.$transaction(async (tx) => {
-    const updated = await tx.application.update({
+  const updated = await prisma.$transaction(async (tx) => {
+    const u = await tx.application.update({
       where: { id: applicationId },
       data: { status: "APPROVED", decidedAt: new Date() },
     });
@@ -153,15 +174,22 @@ export async function decideApplication(
         listingId: app.listing.id,
         applicationId: app.id,
         tenantId: app.tenantId,
-        landlordId: app.listing.agentId,    // for now: agent IS landlord; differentiate later
+        landlordId: app.listing.agentId,
         startDate,
         rentKesCents: app.listing.rentKesCents,
         depositKesCents,
         status: "PENDING_DEPOSIT",
       },
     });
-    return updated;
+    return u;
   });
+  recordEvent({
+    type: "application_decided",
+    actorId: agentId, actorRole: "AGENT",
+    targetType: "application", targetId: applicationId,
+    properties: { decision: "APPROVED", listingId: app.listing.id },
+  });
+  return updated;
 }
 
 export async function withdrawApplication(applicationId: string, tenantId: string) {

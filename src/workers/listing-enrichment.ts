@@ -39,6 +39,7 @@ export function startListingEnrichmentWorker(): Worker<ListingEnrichmentJob> {
         photoUrls,
         neighborhood: listing.neighborhood,
         agentHint: listing.title,
+        meta: { actorId: listing.agentId, targetId: listing.id },
       });
 
       const embedding = await embed(`${draft.content.title}. ${draft.content.description}`);
@@ -65,7 +66,7 @@ export function startListingEnrichmentWorker(): Worker<ListingEnrichmentJob> {
         viewingsBookedCount: 0,
         viewingsCompletedCount: 0,
         reportsCount: 0,
-      });
+      }, { actorId: listing.agentId });
 
       await prisma.listing.update({
         where: { id: listingId },
