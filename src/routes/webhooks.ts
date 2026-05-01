@@ -11,6 +11,7 @@
 import type { FastifyInstance } from "fastify";
 import { DarajaClient } from "../services/mpesa";
 import { handleStkCallback } from "../services/escrow";
+import { handleB2CResult, handleB2CTimeout } from "../services/escrow-result";
 import { logger } from "../lib/logger";
 
 export async function webhookRoutes(app: FastifyInstance) {
@@ -28,15 +29,22 @@ export async function webhookRoutes(app: FastifyInstance) {
     }
   });
 
-  // B2C result (escrow release confirmation) — wired up later.
+  // B2C result — Daraja's async confirmation that the landlord payout landed.
   app.post("/v1/webhooks/mpesa/b2c-result", async (req, reply) => {
     reply.send({ ResultCode: 0, ResultDesc: "Accepted" });
-    logger.info({ body: req.body }, "b2c result received");
-    // TODO: update Escrow.status to RELEASED on success
+    try {
+      await handleB2CResult(req.body);
+    } catch (e) {
+      logger.error({ err: e, body: req.body }, "b2c result handling failed");
+    }
   });
 
   app.post("/v1/webhooks/mpesa/b2c-timeout", async (req, reply) => {
     reply.send({ ResultCode: 0, ResultDesc: "Accepted" });
-    logger.warn({ body: req.body }, "b2c timeout — manual review needed");
+    try {
+      await handleB2CTimeout(req.body);
+    } catch (e) {
+      logger.error({ err: e, body: req.body }, "b2c timeout handling failed");
+    }
   });
 }

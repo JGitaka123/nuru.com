@@ -17,6 +17,8 @@ import { prisma } from "../db/client";
 import { buildDarajaFromEnv, type StkCallbackPayload } from "./mpesa";
 import { logger } from "../lib/logger";
 import { sendSms } from "./notifications";
+import { escrowReleaseQueue } from "../workers/queues";
+import { ConflictError, NotFoundError } from "../lib/errors";
 
 export interface InitiateDepositInput {
   leaseId: string;
@@ -31,7 +33,7 @@ export async function initiateDeposit(input: InitiateDepositInput) {
   });
 
   if (lease.escrow?.status === "HELD") {
-    throw new Error("Deposit already paid");
+    throw new ConflictError("Deposit already paid");
   }
 
   // Our fee: 1% of deposit, capped at 5000 KES.
@@ -148,15 +150,28 @@ export async function handleStkCallback(cb: StkCallbackPayload) {
  * via Daraja B2C. (B2C scaffolding lives in a separate file; the trigger
  * lives here so the escrow lifecycle is centralized.)
  */
-export async function confirmMoveIn(escrowId: string) {
-  // Implementation: enqueue a B2C job in workers/release-escrow.ts
-  // Keeping the network call out of the request path because B2C requires
-  // a security credential and is best handled in a queued worker.
-  const escrow = await prisma.escrow.findUniqueOrThrow({ where: { id: escrowId } });
+export async function confirmMoveIn(escrowId: string, byUserId: string) {
+  const escrow = await prisma.escrow.findUnique({
+    where: { id: escrowId },
+    include: { lease: true },
+  });
+  if (!escrow) throw new NotFoundError("Escrow");
   if (escrow.status !== "HELD") {
-    throw new Error(`Cannot release escrow in status ${escrow.status}`);
+    throw new ConflictError(`Cannot release escrow in status ${escrow.status}`);
   }
-  // workers consume from the "escrow:release" queue
-  // await escrowQueue.add("release", { escrowId });
+  if (escrow.lease.tenantId !== byUserId) {
+    throw new ConflictError("Only the tenant can confirm move-in");
+  }
+
+  // Idempotent: jobId is the escrow id, so duplicate confirms collapse.
+  await escrowReleaseQueue.add(
+    "release",
+    { escrowId },
+    { jobId: `release-${escrowId}`, attempts: 5, backoff: { type: "exponential", delay: 30_000 } },
+  );
+
+  await prisma.escrowEvent.create({
+    data: { escrowId, type: "release_queued", payload: { byUserId } },
+  });
   return { queued: true };
 }

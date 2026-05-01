@@ -99,13 +99,17 @@ comment above the call.
 - [x] Search parser prompt
 - [x] Fraud detection scorer
 - [x] M-Pesa Daraja STK push + callback handler
-- [ ] Listing CRUD API
-- [ ] Photo upload pipeline (R2 signed URLs + AI enrichment job)
-- [ ] Conversational search endpoint
-- [ ] Agent dashboard
-- [ ] Viewing booking + reminders
-- [ ] Verification flow
-- [ ] PWA shell
+- [x] Foundation utils: typed errors, phone normalization, JWT auth, rate limit, R2 client
+- [x] Phone OTP auth (request/verify) + JWT sessions + role-based middleware
+- [x] Listing CRUD API with state machine (DRAFT→PENDING_REVIEW→ACTIVE→…)
+- [x] Photo upload pipeline (signed R2 URLs + listing enrichment worker)
+- [x] Viewing booking + 24h SMS reminder worker
+- [x] Verification flow (tenant ID hash, agent KRA PIN)
+- [x] B2C escrow release worker + B2C result/timeout webhook handlers
+- [x] Conversational search endpoint
+- [ ] Agent dashboard (web)
+- [ ] PWA shell (web)
+- [ ] WhatsApp Business inbound + autoreply
 
 ## How to ask Claude Code for help
 

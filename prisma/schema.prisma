@@ -17,6 +17,24 @@ datasource db {
 }
 
 // =====================================================
+// AUTH — phone OTP attempts
+// =====================================================
+
+// One row per OTP issuance. Code is hashed; raw code is sent via SMS only.
+// Old rows are pruned by a worker (or we add a TTL index on createdAt).
+model OtpAttempt {
+  id           String   @id @default(cuid())
+  phoneE164    String
+  codeHash     String   // bcrypt-style hash of the 6-digit code
+  attempts     Int      @default(0)  // verify attempts; lock at 5
+  consumedAt   DateTime?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([phoneE164, createdAt])
+}
+
+// =====================================================
 // USERS — tenants, agents, landlords, admins
 // =====================================================
 

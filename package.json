@@ -5,8 +5,10 @@
   "packageManager": "[email protected]",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "dev:workers": "tsx watch src/workers/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
+    "start:workers": "node dist/workers/index.js",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
