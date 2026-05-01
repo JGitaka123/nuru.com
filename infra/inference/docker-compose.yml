@@ -1,0 +1,58 @@
+# Self-hosted inference stack: bge-m3 embeddings, bge-reranker, faster-whisper
+# Designed to run on a single L4 or A10 GPU instance (~$200-400/month).
+#
+# Local development: skip the GPU bits and use CPU images for bge-m3 (slow
+# but works for testing). Whisper basically requires a GPU to be useful.
+#
+# Production: deploy this on a single GPU box (Hetzner, Lambda, RunPod) and
+# point EMBEDDING_URL/RERANKER_URL/WHISPER_URL at it from the API service.
+
+version: "3.9"
+
+services:
+  embeddings:
+    # Hugging Face Text Embeddings Inference — production-grade.
+    # bge-m3 is multilingual including Swahili. 1024-dim. Apache 2.0.
+    image: ghcr.io/huggingface/text-embeddings-inference:1.5
+    command: --model-id BAAI/bge-m3 --port 8001
+    ports: ["8001:8001"]
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, count: 1, capabilities: [gpu] }]
+    volumes:
+      - hf-cache:/data
+    environment:
+      - HF_HOME=/data
+
+  reranker:
+    image: ghcr.io/huggingface/text-embeddings-inference:1.5
+    command: --model-id BAAI/bge-reranker-v2-m3 --port 8002
+    ports: ["8002:8002"]
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, count: 1, capabilities: [gpu] }]
+    volumes:
+      - hf-cache:/data
+    environment:
+      - HF_HOME=/data
+
+  whisper:
+    # faster-whisper packaged behind a small FastAPI shim. The shim lives
+    # in infra/inference/whisper-server/ — see that dir for Dockerfile.
+    build: ./whisper-server
+    ports: ["8003:8003"]
+    deploy:
+      resources:
+        reservations:
+          devices: [{ driver: nvidia, count: 1, capabilities: [gpu] }]
+    volumes:
+      - hf-cache:/data
+    environment:
+      - HF_HOME=/data
+      - WHISPER_MODEL=large-v3
+      - WHISPER_COMPUTE_TYPE=float16
+
+volumes:
+  hf-cache:

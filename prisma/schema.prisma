@@ -1,0 +1,360 @@
+// Nuru.com data model
+// Run `pnpm db:migrate` after changing this file.
+//
+// Note: PostGIS geography and pgvector types are declared via Unsupported()
+// because Prisma doesn't have first-class support yet. Raw SQL helpers in
+// packages/db/src/geo.ts and packages/db/src/embeddings.ts.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis, vector]
+}
+
+// =====================================================
+// USERS — tenants, agents, landlords, admins
+// =====================================================
+
+enum UserRole {
+  TENANT
+  AGENT
+  LANDLORD
+  ADMIN
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model User {
+  id              String   @id @default(cuid())
+  phoneE164       String   @unique  // +254712345678
+  email           String?  @unique
+  name            String?
+  role            UserRole @default(TENANT)
+  preferredLang   String   @default("en")  // en, sw, sheng
+  verifiedAt      DateTime?
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  nationalIdHash  String?  // hashed, never store raw
+  kraPin          String?  // for agents only
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  agentProfile    AgentProfile?
+  listings        Listing[]      @relation("AgentListings")
+  inquiries       Inquiry[]
+  viewings        Viewing[]
+  applications    Application[]
+  leasesAsTenant  Lease[]        @relation("TenantLease")
+  leasesAsLandlord Lease[]       @relation("LandlordLease")
+  reports         FraudReport[]  @relation("ReporterReports")
+
+  @@index([role])
+  @@index([phoneE164])
+}
+
+model AgentProfile {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agencyName      String?
+  bio             String?
+  ratingAvg       Float?
+  ratingCount     Int     @default(0)
+  trustScore      Int     @default(50)  // 0-100, computed
+  subscriptionTier String @default("free")  // free, pro, premium
+  subscriptionEndsAt DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([trustScore])
+}
+
+// =====================================================
+// LISTINGS
+// =====================================================
+
+enum ListingStatus {
+  DRAFT
+  PENDING_REVIEW
+  ACTIVE
+  PAUSED
+  RENTED
+  REMOVED
+}
+
+enum ListingCategory {
+  BEDSITTER
+  STUDIO
+  ONE_BR
+  TWO_BR
+  THREE_BR
+  FOUR_PLUS_BR
+  MAISONETTE
+  TOWNHOUSE
+}
+
+model Listing {
+  id              String          @id @default(cuid())
+  agentId         String
+  agent           User            @relation("AgentListings", fields: [agentId], references: [id])
+
+  title           String
+  description     String          @db.Text
+  category        ListingCategory
+  bedrooms        Int
+  bathrooms       Int
+  rentKesCents    Int             // 60_000 KES = 6_000_000
+  depositMonths   Int             @default(2)
+  serviceChargeKesCents Int       @default(0)
+  features        String[]        // ["balcony", "borehole", "backup_generator", ...]
+
+  // Location
+  neighborhood    String
+  estate          String?
+  addressLine     String?
+  // PostGIS geography(Point, 4326) — see packages/db/src/geo.ts for queries
+  location        Unsupported("geography(Point, 4326)")?
+
+  // Photos (R2 keys)
+  photoKeys       String[]
+  primaryPhotoKey String?
+
+  // AI-generated metadata
+  aiGenerated     Boolean         @default(false)
+  aiQualityScore  Float?          // 0-1, photo + listing completeness
+  aiPriceLow      Int?            // estimated fair rent low (KES cents)
+  aiPriceHigh     Int?            // estimated fair rent high
+  fraudScore      Int             @default(0)  // 0-100, higher = riskier
+  fraudFlags      String[]        // ["watermark_detected", "price_anomaly", ...]
+
+  // Embedding for semantic search (1024-dim from bge-m3)
+  embedding       Unsupported("vector(1024)")?
+
+  // Verification
+  verifiedAt      DateTime?
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  verifiedPhotosAt DateTime?      // when photos were last confirmed fresh
+
+  status          ListingStatus   @default(DRAFT)
+  publishedAt     DateTime?
+  rentedAt        DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  inquiries       Inquiry[]
+  viewings        Viewing[]
+  applications    Application[]
+  leases          Lease[]
+  fraudReports    FraudReport[]
+
+  @@index([status, neighborhood])
+  @@index([rentKesCents])
+  @@index([category, bedrooms])
+  @@index([fraudScore])
+  @@index([agentId, status])
+}
+
+// =====================================================
+// INQUIRIES + VIEWINGS — the funnel
+// =====================================================
+
+model Inquiry {
+  id           String   @id @default(cuid())
+  listingId    String
+  listing      Listing  @relation(fields: [listingId], references: [id])
+  tenantId     String
+  tenant       User     @relation(fields: [tenantId], references: [id])
+  message      String?
+  channel      String   @default("app")  // app, whatsapp, sms
+  createdAt    DateTime @default(now())
+  respondedAt  DateTime?
+
+  @@index([listingId])
+  @@index([tenantId])
+}
+
+enum ViewingStatus {
+  REQUESTED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model Viewing {
+  id           String        @id @default(cuid())
+  listingId    String
+  listing      Listing       @relation(fields: [listingId], references: [id])
+  tenantId     String
+  tenant       User          @relation(fields: [tenantId], references: [id])
+  scheduledAt  DateTime
+  status       ViewingStatus @default(REQUESTED)
+  notes        String?
+  rating       Int?          // 1-5, post-viewing
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([listingId, scheduledAt])
+  @@index([tenantId])
+  @@index([status])
+}
+
+// =====================================================
+// APPLICATIONS + LEASES + ESCROW
+// =====================================================
+
+enum ApplicationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+model Application {
+  id              String            @id @default(cuid())
+  listingId       String
+  listing         Listing           @relation(fields: [listingId], references: [id])
+  tenantId        String
+  tenant          User              @relation(fields: [tenantId], references: [id])
+  employerName    String?
+  monthlyIncomeKesCents Int?
+  references      Json?             // { name, phone, relationship }[]
+  documents       Json?             // { type, r2Key }[]
+  aiSummary       String?           @db.Text
+  aiRecommendation String?          // approve | review | reject
+  status          ApplicationStatus @default(SUBMITTED)
+  createdAt       DateTime          @default(now())
+  decidedAt       DateTime?
+
+  lease           Lease?
+
+  @@index([listingId, status])
+  @@index([tenantId])
+}
+
+enum LeaseStatus {
+  PENDING_DEPOSIT
+  ACTIVE
+  ENDED
+  TERMINATED
+  DISPUTED
+}
+
+model Lease {
+  id                String      @id @default(cuid())
+  listingId         String
+  listing           Listing     @relation(fields: [listingId], references: [id])
+  applicationId     String      @unique
+  application       Application @relation(fields: [applicationId], references: [id])
+  tenantId          String
+  tenant            User        @relation("TenantLease", fields: [tenantId], references: [id])
+  landlordId        String
+  landlord          User        @relation("LandlordLease", fields: [landlordId], references: [id])
+
+  startDate         DateTime
+  endDate           DateTime?
+  rentKesCents      Int
+  depositKesCents   Int
+  signedTenantAt    DateTime?
+  signedLandlordAt  DateTime?
+  documentR2Key     String?     // signed PDF
+
+  status            LeaseStatus @default(PENDING_DEPOSIT)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  escrow            Escrow?
+
+  @@index([tenantId])
+  @@index([landlordId])
+  @@index([status])
+}
+
+enum EscrowStatus {
+  PENDING
+  HELD
+  RELEASED
+  REFUNDED
+  DISPUTED
+}
+
+model Escrow {
+  id                String       @id @default(cuid())
+  leaseId           String       @unique
+  lease             Lease        @relation(fields: [leaseId], references: [id])
+  amountKesCents    Int
+  feeKesCents       Int          // our cut
+  status            EscrowStatus @default(PENDING)
+
+  // M-Pesa references — never edit these, ever
+  stkCheckoutId     String?      @unique  // CheckoutRequestID from STK push
+  stkMerchantId     String?      @unique  // MerchantRequestID — idempotency key
+  mpesaReceipt      String?      // confirmed receipt number
+  paidAt            DateTime?
+  releasedAt        DateTime?
+  refundedAt        DateTime?
+  b2cConversationId String?      // for the release transaction
+
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  events            EscrowEvent[]
+
+  @@index([status])
+}
+
+// Audit log — every state transition lands here. Never delete.
+model EscrowEvent {
+  id           String   @id @default(cuid())
+  escrowId     String
+  escrow       Escrow   @relation(fields: [escrowId], references: [id])
+  type         String   // stk_initiated, stk_callback, b2c_initiated, etc.
+  payload      Json     // raw Daraja payload
+  createdAt    DateTime @default(now())
+
+  @@index([escrowId, createdAt])
+}
+
+// =====================================================
+// FRAUD + TRUST
+// =====================================================
+
+model FraudReport {
+  id           String   @id @default(cuid())
+  listingId    String?
+  listing      Listing? @relation(fields: [listingId], references: [id])
+  reporterId   String
+  reporter     User     @relation("ReporterReports", fields: [reporterId], references: [id])
+  reason       String   // fake_listing, viewing_fee_demand, stolen_photos, etc.
+  details      String?  @db.Text
+  resolvedAt   DateTime?
+  createdAt    DateTime @default(now())
+
+  @@index([listingId])
+}
+
+// =====================================================
+// MARKET DATA — for AI pricing and comps
+// =====================================================
+
+model RentComp {
+  id              String   @id @default(cuid())
+  neighborhood    String
+  category        ListingCategory
+  bedrooms        Int
+  rentKesCents    Int
+  source          String   // nuru, scraped:jiji, scraped:property_ac_ke
+  observedAt      DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([neighborhood, category, bedrooms, observedAt])
+}
