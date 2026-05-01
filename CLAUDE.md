@@ -118,6 +118,14 @@ comment above the call.
 - [x] Integration test scaffold (`pnpm test:integration`)
 - [x] Seed, eval-runner, STK simulator, VAPID generator scripts
 - [x] Vendor setup + deployment + incident runbooks (`docs/runbooks/`)
+- [x] Inquiries — tenants DM agents about listings; agent inbox UI
+- [x] Applications — submit, AI-screen (Sonnet, bias-guarded), agent decide
+- [x] Leases — auto-created on approval, sign + dispute + escrow link
+- [x] Fraud reports + auto-rescore worker (Sonnet)
+- [x] Voice search route — Whisper transcript → search-parser
+- [x] Admin endpoints — verification queue, risky-listing review, metrics, force-status
+- [x] CORS + Helmet on the API; behind-Cloudflare trustProxy
+- [x] Web pages: apply, my-applications, my-leases, lease detail (sign + STK + confirm), agent inbox + applications review
 - [ ] Apply Prisma migrations against a real DB (deployment time)
 - [ ] Approve "NURU" sender ID with Africa's Talking (3 days lead time)
 - [ ] Approve Daraja B2C production access (~3 weeks lead time)

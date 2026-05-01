@@ -98,6 +98,15 @@ export default function AgentListingPage({ params }: { params: Promise<{ id: str
           </button>
         ))}
       </div>
+
+      <div className="flex flex-wrap gap-3 border-t border-ink-200 pt-4 text-sm">
+        <Link href={`/agent/${id}/applications`} className="rounded-lg border border-ink-300 px-3 py-1.5 hover:bg-ink-50">
+          View applications
+        </Link>
+        <Link href="/agent/inbox" className="rounded-lg border border-ink-300 px-3 py-1.5 hover:bg-ink-50">
+          Inbox
+        </Link>
+      </div>
     </div>
   );
 }

@@ -73,6 +73,12 @@ export default function ListingPage({ params }: { params: Promise<{ id: string }
           >
             Book a viewing
           </Link>
+          <Link
+            href={`/listing/${listing.id}/apply`}
+            className="block w-full rounded-lg border border-brand-300 py-3 text-center font-semibold text-brand-700 hover:bg-brand-50"
+          >
+            Apply to rent
+          </Link>
           {listing.agent && (
             <div className="border-t border-ink-100 pt-4 text-sm">
               <p className="text-ink-500">Listed by</p>

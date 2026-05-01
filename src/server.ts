@@ -1,4 +1,6 @@
 import Fastify from "fastify";
+import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
 import { ZodError } from "zod";
 import { searchRoutes } from "./routes/search";
 import { webhookRoutes } from "./routes/webhooks";
@@ -9,11 +11,43 @@ import { viewingRoutes } from "./routes/viewings";
 import { verificationRoutes } from "./routes/verification";
 import { escrowRoutes } from "./routes/escrow";
 import { pushRoutes } from "./routes/push";
+import { inquiryRoutes } from "./routes/inquiries";
+import { applicationRoutes } from "./routes/applications";
+import { leaseRoutes } from "./routes/leases";
+import { fraudReportRoutes } from "./routes/fraud-reports";
+import { voiceSearchRoutes } from "./routes/voice-search";
+import { adminRoutes } from "./routes/admin";
 import { logger } from "./lib/logger";
 import { inferenceHealth } from "./services/inference";
 import { AppError, toHttpError } from "./lib/errors";
 
-const app = Fastify({ logger });
+const app = Fastify({
+  logger,
+  bodyLimit: 5 * 1024 * 1024,            // 5 MB — photos go to R2 directly
+  trustProxy: true,                       // we sit behind Cloudflare
+});
+
+// Security headers. Default policy is fine for an API service.
+app.register(helmet, {
+  // Allow inline data URLs for the small set of image responses we send.
+  contentSecurityPolicy: false,
+});
+
+// CORS — allow the web app's origin, and credentials for future cookie use.
+const allowedOrigins = (process.env.CORS_ORIGINS ?? "http://localhost:3000")
+  .split(",").map((s) => s.trim()).filter(Boolean);
+app.register(cors, {
+  origin: (origin, cb) => {
+    // No origin = same-origin or non-browser; allow.
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+      return cb(null, true);
+    }
+    return cb(new Error("Not allowed by CORS"), false);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+});
 
 app.setErrorHandler((err, _req, reply) => {
   if (err instanceof ZodError) {
@@ -43,6 +77,12 @@ app.register(viewingRoutes);
 app.register(verificationRoutes);
 app.register(escrowRoutes);
 app.register(pushRoutes);
+app.register(inquiryRoutes);
+app.register(applicationRoutes);
+app.register(leaseRoutes);
+app.register(fraudReportRoutes);
+app.register(voiceSearchRoutes);
+app.register(adminRoutes);
 app.register(searchRoutes);
 app.register(webhookRoutes);
 

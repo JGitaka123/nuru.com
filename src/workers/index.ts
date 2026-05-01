@@ -9,6 +9,7 @@ import { logger } from "../lib/logger";
 import { startListingEnrichmentWorker } from "./listing-enrichment";
 import { startEscrowReleaseWorker } from "./escrow-release";
 import { startViewingReminderWorker } from "./viewing-reminders";
+import { startFraudRescoreWorker } from "./fraud-rescore";
 
 const FILTER = (process.env.WORKER_FILTER ?? "").split(",").map((s) => s.trim()).filter(Boolean);
 const enabled = (name: string) => FILTER.length === 0 || FILTER.includes(name);
@@ -27,6 +28,10 @@ async function main() {
   if (enabled("viewing-reminders")) {
     const w = startViewingReminderWorker();
     workers.push({ name: "viewing-reminders", close: () => w.close() });
+  }
+  if (enabled("fraud-rescore")) {
+    const w = startFraudRescoreWorker();
+    workers.push({ name: "fraud-rescore", close: () => w.close() });
   }
   logger.info({ workers: workers.map((w) => w.name) }, "workers started");
 }
