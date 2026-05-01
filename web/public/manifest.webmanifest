@@ -1,0 +1,22 @@
+{
+  "name": "Nuru — Find your home in Nairobi",
+  "short_name": "Nuru",
+  "description": "AI-native rental marketplace for Kenya",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#f5840b",
+  "orientation": "portrait-primary",
+  "categories": ["lifestyle", "shopping", "real_estate"],
+  "lang": "en-KE",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Search listings", "url": "/search" },
+    { "name": "My viewings", "url": "/me/viewings" },
+    { "name": "Agent dashboard", "url": "/agent" }
+  ]
+}

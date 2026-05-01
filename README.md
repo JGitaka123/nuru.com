@@ -7,35 +7,42 @@ AI-native rental marketplace for Kenya. MVP: long-term rentals in Nairobi.
 ```bash
 # Prereqs: Node 20+, pnpm, Docker, a Daraja sandbox account, an Anthropic API key
 
+# 1. API (Fastify)
 cp .env.example .env  # fill in keys
 pnpm install
 docker compose up -d  # postgres + redis + self-hosted inference
 pnpm db:migrate
 pnpm db:seed
-pnpm dev
-```
+pnpm dev               # → http://localhost:4000
 
-Open `http://localhost:3000` for the web app, `http://localhost:4000/health`
-for the API.
+# 2. Workers (BullMQ) — separate process
+pnpm dev:workers
+
+# 3. Web (Next.js)
+cd web
+cp .env.example .env.local
+pnpm install
+pnpm dev               # → http://localhost:3000
+```
 
 ## Repo layout
 
 ```
-apps/
-  web/              Next.js 14 PWA (tenants + agents)
-  api/              Fastify API service
-  workers/          BullMQ background jobs
-packages/
-  db/               Prisma schema + client
-  ai/               Claude router, prompts, evals
-  mpesa/            Daraja client (STK push, B2C, callbacks)
-  shared/           Zod schemas, types, errors, utils
-infra/
-  inference/        docker-compose for bge-m3, whisper, reranker
-  terraform/        infra-as-code (later)
+src/                  Fastify API (routes, services, lib, prompts)
+  routes/             /v1/* HTTP endpoints
+  services/           business logic (listings, viewings, escrow, otp, …)
+  prompts/            versioned Claude prompts + evals
+  ai/router.ts        cost-aware model selection
+  workers/            BullMQ consumers (listing-enrichment, escrow-release, …)
+  lib/                errors, phone, auth (JWT), r2, rate-limit, logger
+  db/                 Prisma client wrapper
+prisma/               schema.prisma + migrations
+web/                  Next.js 14 PWA (tenants + agents)
+infra/inference/      bge-m3 + reranker + whisper (single GPU)
 docs/
   architecture.md
-  decisions/        ADRs
+  decisions/          ADRs
+scripts/              seed, eval, mpesa simulators, cost projections
 ```
 
 ## Key commands
@@ -54,9 +61,10 @@ docs/
 
 1. `CLAUDE.md` — the rules of the road
 2. `docs/architecture.md` — system design
-3. `packages/ai/src/router.ts` — how we route AI calls
-4. `packages/db/prisma/schema.prisma` — data model
-5. `packages/mpesa/src/stk-push.ts` — payment flow
+3. `src/ai/router.ts` — how we route AI calls
+4. `prisma/schema.prisma` — data model
+5. `src/services/mpesa.ts` + `src/services/escrow.ts` — payment flow
+6. `web/src/app/` — Next.js routes (search, listing, agent, login)
 
 ## Environment variables
 

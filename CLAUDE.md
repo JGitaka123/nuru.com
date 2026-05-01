@@ -107,9 +107,13 @@ comment above the call.
 - [x] Verification flow (tenant ID hash, agent KRA PIN)
 - [x] B2C escrow release worker + B2C result/timeout webhook handlers
 - [x] Conversational search endpoint
-- [ ] Agent dashboard (web)
-- [ ] PWA shell (web)
+- [x] Web PWA shell (Next.js 14 + Tailwind, manifest + service worker)
+- [x] Agent dashboard (my listings, listing creator with photo upload, verify)
+- [x] Tenant pages (search, listing detail, viewing booking, my viewings)
+- [x] Phone-OTP login flow on web
 - [ ] WhatsApp Business inbound + autoreply
+- [ ] Push notifications via PWA + Web Push
+- [ ] Apply Prisma migrations + run integration tests against real DB
 
 ## How to ask Claude Code for help
 
