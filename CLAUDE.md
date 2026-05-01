@@ -139,6 +139,20 @@ comment above the call.
 - [x] Health check pings DB + Redis + inference; graceful shutdown
 - [x] ADR-002 documents the ML layer; eval-mining script (`pnpm ai:mine-evals`)
 - [x] `prisma/migrations/` scaffold + deployment-time `prisma migrate dev --name init`
+- [x] **Marketing/outreach engine** — Lead + OutreachCampaign + OutreachEmail +
+      OutreachResponse + SuppressionList models; lead intake (manual + bulk);
+      Sonnet personalized email composer (5 template variants: bank, auctioneer,
+      agent, developer, landlord); Resend send + tracking webhooks; one-click
+      unsubscribe (RFC 8058); rate-limited sender worker; admin pipeline UI
+- [x] **Saved searches + alerts** — tenant defines criteria, gets push/SMS/email
+      when a new listing matches; structural matcher; fan-out worker
+- [x] **Agent analytics** — per-listing views/inquiries/applications/saves/
+      conversion + days-listed; per-listing daily breakdown; web dashboard
+- [x] **UX polish** — toast system, image gallery (swipe + keys + thumbs),
+      Leaflet map view (CDN-loaded, no extra deps), loading skeletons,
+      mobile nav drawer, "Save this search" CTA on results, market-comparison
+      badge ("X% below market") on listing detail
+- [x] Admin web dashboard — funnel chart, leads table, campaigns control panel
 - [ ] Apply Prisma migrations against a real DB (deployment time)
 - [ ] Approve "NURU" sender ID with Africa's Talking (3 days lead time)
 - [ ] Approve Daraja B2C production access (~3 weeks lead time)
