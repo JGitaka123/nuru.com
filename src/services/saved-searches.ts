@@ -89,14 +89,17 @@ export function matches(ss: {
   rentMinKesCents: number | null;
   mustHave: string[];
 }, listing: ListingRow): boolean {
-  if (ss.neighborhoods.length > 0 && !ss.neighborhoods.includes(listing.neighborhood)) return false;
+  if (ss.neighborhoods.length > 0) {
+    const target = listing.neighborhood.toLowerCase();
+    if (!ss.neighborhoods.some((n) => n.toLowerCase() === target)) return false;
+  }
   if (ss.bedroomsMin !== null && listing.bedrooms < ss.bedroomsMin) return false;
   if (ss.bedroomsMax !== null && listing.bedrooms > ss.bedroomsMax) return false;
   if (ss.rentMaxKesCents !== null && listing.rentKesCents > ss.rentMaxKesCents) return false;
   if (ss.rentMinKesCents !== null && listing.rentKesCents < ss.rentMinKesCents) return false;
   if (ss.mustHave.length > 0) {
-    const features = new Set(listing.features);
-    for (const f of ss.mustHave) if (!features.has(f)) return false;
+    const features = new Set(listing.features.map((f) => f.toLowerCase()));
+    for (const f of ss.mustHave) if (!features.has(f.toLowerCase())) return false;
   }
   return true;
 }
