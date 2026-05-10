@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { matches } from "./saved-searches";
+import { matches, SavedSearchInputSchema } from "./saved-searches";
 
 const baseListing = {
   id: "l1",
@@ -27,20 +27,18 @@ describe("matches", () => {
   });
 
   describe("neighborhood", () => {
-    it("matches when neighborhood is in the saved-search list", () => {
-      expect(matches({ ...noFilters, neighborhoods: ["Kilimani", "Westlands"] }, baseListing)).toBe(true);
+    it("matches when listing neighborhood is in the saved-search list", () => {
+      expect(matches({ ...noFilters, neighborhoods: ["kilimani", "westlands"] }, baseListing)).toBe(true);
     });
 
-    it("rejects when neighborhood is not in the saved-search list", () => {
-      expect(matches({ ...noFilters, neighborhoods: ["Lavington"] }, baseListing)).toBe(false);
+    it("rejects when listing neighborhood is not in the saved-search list", () => {
+      expect(matches({ ...noFilters, neighborhoods: ["lavington"] }, baseListing)).toBe(false);
     });
 
-    it("matches case-insensitively (saved as lowercase, listing capitalized)", () => {
-      expect(matches({ ...noFilters, neighborhoods: ["kilimani"] }, baseListing)).toBe(true);
-    });
-
-    it("matches case-insensitively (saved capitalized, listing lowercase)", () => {
-      expect(matches({ ...noFilters, neighborhoods: ["Kilimani"] }, { ...baseListing, neighborhood: "kilimani" })).toBe(true);
+    it("lowercases the listing-side neighborhood before comparing", () => {
+      // Saved input is canonical lowercase (per SavedSearchInputSchema);
+      // listings can be any case, so the matcher normalizes them.
+      expect(matches({ ...noFilters, neighborhoods: ["kilimani"] }, { ...baseListing, neighborhood: "KILIMANI" })).toBe(true);
     });
   });
 
@@ -82,24 +80,45 @@ describe("matches", () => {
 
   describe("mustHave features", () => {
     it("matches when listing has every required feature", () => {
-      expect(matches({ ...noFilters, mustHave: ["Parking", "Balcony"] }, baseListing)).toBe(true);
-    });
-
-    it("rejects when listing is missing a required feature", () => {
-      expect(matches({ ...noFilters, mustHave: ["Parking", "Pool"] }, baseListing)).toBe(false);
-    });
-
-    it("matches case-insensitively (saved as lowercase, listing capitalized)", () => {
       expect(matches({ ...noFilters, mustHave: ["parking", "balcony"] }, baseListing)).toBe(true);
     });
 
-    it("matches case-insensitively (saved capitalized, listing lowercase)", () => {
+    it("rejects when listing is missing a required feature", () => {
+      expect(matches({ ...noFilters, mustHave: ["parking", "pool"] }, baseListing)).toBe(false);
+    });
+
+    it("lowercases listing features before comparing", () => {
       expect(
         matches(
-          { ...noFilters, mustHave: ["Parking"] },
-          { ...baseListing, features: ["parking", "gym"] },
+          { ...noFilters, mustHave: ["parking"] },
+          { ...baseListing, features: ["PARKING", "Gym"] },
         ),
       ).toBe(true);
     });
+  });
+});
+
+describe("SavedSearchInputSchema", () => {
+  const baseInput = { name: "My search" };
+
+  it("lowercases neighborhoods so the matcher receives canonical input", () => {
+    const parsed = SavedSearchInputSchema.parse({ ...baseInput, neighborhoods: ["Kilimani", "WESTLANDS"] });
+    expect(parsed.neighborhoods).toEqual(["kilimani", "westlands"]);
+  });
+
+  it("trims whitespace around neighborhood entries", () => {
+    const parsed = SavedSearchInputSchema.parse({ ...baseInput, neighborhoods: ["  Kilimani  "] });
+    expect(parsed.neighborhoods).toEqual(["kilimani"]);
+  });
+
+  it("lowercases mustHave features", () => {
+    const parsed = SavedSearchInputSchema.parse({ ...baseInput, mustHave: ["Parking", "BALCONY"] });
+    expect(parsed.mustHave).toEqual(["parking", "balcony"]);
+  });
+
+  it("defaults missing arrays to empty", () => {
+    const parsed = SavedSearchInputSchema.parse(baseInput);
+    expect(parsed.neighborhoods).toEqual([]);
+    expect(parsed.mustHave).toEqual([]);
   });
 });

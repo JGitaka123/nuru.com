@@ -162,7 +162,9 @@ export async function listPublicListings(filters: PublicListingFilters) {
     where: {
       status: "ACTIVE",
       fraudScore: { lt: 60 },
-      ...(filters.neighborhood ? { neighborhood: filters.neighborhood } : {}),
+      ...(filters.neighborhood
+        ? { neighborhood: { equals: filters.neighborhood, mode: "insensitive" as const } }
+        : {}),
       ...(filters.category ? { category: filters.category } : {}),
       ...(filters.bedroomsMin !== undefined ? { bedrooms: { gte: filters.bedroomsMin } } : {}),
       ...(filters.rentMaxKesCents !== undefined ? { rentKesCents: { lte: filters.rentMaxKesCents } } : {}),

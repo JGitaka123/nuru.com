@@ -20,15 +20,18 @@ import { z } from "zod";
 import { prisma } from "../db/client";
 import { ConflictError, NotFoundError } from "../lib/errors";
 
+// Stored canonical so the matcher can compare without per-call normalization.
+const canonicalTokens = z.array(z.string().trim().toLowerCase()).max(10).default([]);
+
 export const SavedSearchInputSchema = z.object({
   name: z.string().min(2).max(100),
   query: z.string().max(500).optional(),
-  neighborhoods: z.array(z.string()).max(10).default([]),
+  neighborhoods: canonicalTokens,
   bedroomsMin: z.number().int().min(0).max(10).optional(),
   bedroomsMax: z.number().int().min(0).max(10).optional(),
   rentMaxKesCents: z.number().int().min(0).max(100_000_000).optional(),
   rentMinKesCents: z.number().int().min(0).max(100_000_000).optional(),
-  mustHave: z.array(z.string()).max(10).default([]),
+  mustHave: canonicalTokens,
   alertPush: z.boolean().default(true),
   alertSms: z.boolean().default(false),
   alertEmail: z.boolean().default(false),
@@ -80,7 +83,12 @@ interface ListingRow {
   primaryPhotoKey: string | null;
 }
 
-/** Test if a listing structurally matches a saved search. */
+/**
+ * Test if a listing structurally matches a saved search.
+ *
+ * Assumes `ss.neighborhoods` and `ss.mustHave` are already canonical
+ * (lowercase, trimmed) — guaranteed by SavedSearchInputSchema at write time.
+ */
 export function matches(ss: {
   neighborhoods: string[];
   bedroomsMin: number | null;
@@ -89,17 +97,14 @@ export function matches(ss: {
   rentMinKesCents: number | null;
   mustHave: string[];
 }, listing: ListingRow): boolean {
-  if (ss.neighborhoods.length > 0) {
-    const target = listing.neighborhood.toLowerCase();
-    if (!ss.neighborhoods.some((n) => n.toLowerCase() === target)) return false;
-  }
+  if (ss.neighborhoods.length > 0 && !ss.neighborhoods.includes(listing.neighborhood.toLowerCase())) return false;
   if (ss.bedroomsMin !== null && listing.bedrooms < ss.bedroomsMin) return false;
   if (ss.bedroomsMax !== null && listing.bedrooms > ss.bedroomsMax) return false;
   if (ss.rentMaxKesCents !== null && listing.rentKesCents > ss.rentMaxKesCents) return false;
   if (ss.rentMinKesCents !== null && listing.rentKesCents < ss.rentMinKesCents) return false;
   if (ss.mustHave.length > 0) {
     const features = new Set(listing.features.map((f) => f.toLowerCase()));
-    for (const f of ss.mustHave) if (!features.has(f.toLowerCase())) return false;
+    for (const f of ss.mustHave) if (!features.has(f)) return false;
   }
   return true;
 }
