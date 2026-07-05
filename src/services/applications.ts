@@ -54,8 +54,8 @@ export async function submitApplication(tenantId: string, input: z.infer<typeof 
       tenantId,
       employerName: data.employerName,
       monthlyIncomeKesCents: data.monthlyIncomeKesCents,
-      references: data.references ?? null,
-      documents: data.documents ?? null,
+      references: data.references ?? undefined,
+      documents: data.documents ?? undefined,
       status: "SUBMITTED",
     },
   });

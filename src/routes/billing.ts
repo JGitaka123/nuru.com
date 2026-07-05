@@ -11,7 +11,6 @@
 
 import type { FastifyInstance } from "fastify";
 import { requireAuth, requireRole } from "../lib/auth";
-import { z } from "zod";
 import { prisma } from "../db/client";
 import { PLANS } from "../services/plans";
 import {

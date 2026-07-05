@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { api, getToken, type SearchResult } from "@/lib/api";
@@ -9,7 +9,7 @@ import MapView from "@/components/MapView";
 import { ListingCardSkeleton } from "@/components/Skeleton";
 import { toast } from "@/components/Toast";
 
-export default function SearchPage() {
+function SearchPageInner() {
   const params = useSearchParams();
   const q = params.get("q") ?? "";
 
@@ -145,5 +145,14 @@ export default function SearchPage() {
         </div>
       )}
     </div>
+  );
+}
+
+// useSearchParams() must render inside a Suspense boundary for static export.
+export default function SearchPage() {
+  return (
+    <Suspense>
+      <SearchPageInner />
+    </Suspense>
   );
 }

@@ -129,7 +129,7 @@ export async function transitionListing(
       targetId: listingId,
     });
     // Fan out to saved-search alerts.
-    const { searchAlertQueue } = await import("../workers/queues");
+    const { searchAlertQueue } = await import("../workers/queues.js");
     await searchAlertQueue.add(
       "match",
       { listingId },

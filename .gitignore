@@ -11,3 +11,4 @@ prisma/*.db-journal
 coverage
 .vscode/settings.json
 .idea
+*.tsbuildinfo

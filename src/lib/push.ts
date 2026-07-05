@@ -64,7 +64,6 @@ function buildVapidJwt(audienceOrigin: string): string {
     x: b64urlEncode(pub.subarray(1, 33)),
     y: b64urlEncode(pub.subarray(33, 65)),
   };
-  const keyObject = createPublicKey({ key: jwk as any, format: "jwk" });
   // Sign expects a private key — recreate from JWK including d.
   const { createPrivateKey } = require("node:crypto") as typeof import("node:crypto");
   const signKey = createPrivateKey({ key: jwk as any, format: "jwk" });
