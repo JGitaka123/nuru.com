@@ -85,6 +85,8 @@ export interface SearchResult {
     relevance: number;
   }>;
   clarifyingQuestion: string | null;
+  /** True when AI parsing/ranking was unavailable and keyword matching was used. */
+  degraded?: boolean;
 }
 
 export interface Listing {

@@ -9,6 +9,13 @@ export const metadata: Metadata = {
   title: "Nuru — Find your home in Nairobi",
   description: "AI-native rental marketplace for Kenya. Verified listings, transparent escrow, instant search.",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: "/icons/icon-192.png",
+  },
   appleWebApp: { capable: true, title: "Nuru", statusBarStyle: "default" },
 };
 

@@ -125,9 +125,9 @@ export async function agentAnalyticsRoutes(app: FastifyInstance) {
 
       // Daily breakdown of views.
       const rawDaily: Array<{ d: Date; n: number }> = await prisma.$queryRawUnsafe(`
-        SELECT date_trunc('day', created_at) AS d, COUNT(*)::int AS n
+        SELECT date_trunc('day', "createdAt") AS d, COUNT(*)::int AS n
         FROM "Event"
-        WHERE type = 'listing_view' AND target_id = $1 AND created_at >= $2
+        WHERE type = 'listing_view' AND "targetId" = $1 AND "createdAt" >= $2
         GROUP BY 1 ORDER BY 1
       `, id, since);
 

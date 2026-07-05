@@ -3,24 +3,36 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { api, getToken, type SearchResult } from "@/lib/api";
+import { api, getToken, type SearchResult, type Listing } from "@/lib/api";
 import { formatKes, photoUrl } from "@/lib/format";
 import MapView from "@/components/MapView";
 import { ListingCardSkeleton } from "@/components/Skeleton";
+import ListingPhoto from "@/components/ListingPhoto";
 import { toast } from "@/components/Toast";
+
+const BROWSE_NEIGHBORHOODS = ["Kilimani", "Westlands", "Kileleshwa", "Lavington", "Parklands"];
 
 function SearchPageInner() {
   const params = useSearchParams();
   const q = params.get("q") ?? "";
 
   const [data, setData] = useState<SearchResult | null>(null);
+  const [browse, setBrowse] = useState<Listing[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [, setQuery] = useState(q);
   const [view, setView] = useState<"grid" | "map">("grid");
 
   useEffect(() => {
-    if (!q) return;
+    if (!q) {
+      // No query yet — show recent listings so the page is browsable.
+      setLoading(true);
+      api<{ items: Listing[] }>("/v1/listings?limit=12", { auth: false })
+        .then((r) => setBrowse(r.items))
+        .catch(() => setBrowse([]))
+        .finally(() => setLoading(false));
+      return;
+    }
     setLoading(true);
     setError(null);
     api<SearchResult>(`/v1/search?q=${encodeURIComponent(q)}&limit=20`, { auth: false })
@@ -91,6 +103,12 @@ function SearchPageInner() {
         </div>
       )}
 
+      {data?.degraded && data.results.length > 0 && (
+        <p className="text-xs text-ink-400">
+          Smart ranking is temporarily unavailable — showing keyword matches.
+        </p>
+      )}
+
       {data && data.results.length > 0 && (
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm text-ink-500">{data.results.length} {data.results.length === 1 ? "match" : "matches"}</p>
@@ -121,6 +139,42 @@ function SearchPageInner() {
         </div>
       )}
 
+      {!q && !loading && (
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-ink-500">Popular areas:</span>
+            {BROWSE_NEIGHBORHOODS.map((n) => (
+              <Link key={n} href={`/search?q=${encodeURIComponent(n)}`}
+                className="rounded-full border border-ink-200 bg-white px-3 py-1 text-sm text-ink-700 hover:border-brand-300 hover:text-brand-700">
+                {n}
+              </Link>
+            ))}
+          </div>
+          {browse && browse.length > 0 && (
+            <>
+              <h2 className="text-lg font-semibold">Recent listings</h2>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {browse.map((l) => (
+                  <Link key={l.id} href={`/listing/${l.id}`} className="group overflow-hidden rounded-xl border border-ink-200 bg-white transition hover:shadow-md">
+                    <ListingPhoto src={l.primaryPhotoKey ? photoUrl(l.primaryPhotoKey) : null} alt={l.title} className="h-48 w-full object-cover" />
+                    <div className="p-4">
+                      <h3 className="font-semibold group-hover:text-brand-600">{l.title}</h3>
+                      <p className="mt-1 text-sm text-ink-500">{l.neighborhood} · {l.bedrooms}BR</p>
+                      <p className="mt-2 font-semibold">{formatKes(l.rentKesCents)}/mo</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
+          {browse && browse.length === 0 && (
+            <div className="rounded-xl bg-white p-8 text-center text-ink-500">
+              No listings yet — check back soon.
+            </div>
+          )}
+        </>
+      )}
+
       {data && data.results.length > 0 && view === "map" && (
         <MapView items={data.results} />
       )}
@@ -129,12 +183,7 @@ function SearchPageInner() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {data.results.map((r) => (
             <Link key={r.id} href={`/listing/${r.id}`} className="group overflow-hidden rounded-xl border border-ink-200 bg-white transition hover:shadow-md">
-              {r.primary_photo_key && photoUrl(r.primary_photo_key) ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={photoUrl(r.primary_photo_key)!} alt={r.title} className="h-48 w-full object-cover" />
-              ) : (
-                <div className="flex h-48 items-center justify-center bg-ink-100 text-ink-400">No photo</div>
-              )}
+              <ListingPhoto src={r.primary_photo_key ? photoUrl(r.primary_photo_key) : null} alt={r.title} className="h-48 w-full object-cover" />
               <div className="p-4">
                 <h3 className="font-semibold group-hover:text-brand-600">{r.title}</h3>
                 <p className="mt-1 text-sm text-ink-500">{r.neighborhood} · {r.bedrooms}BR</p>

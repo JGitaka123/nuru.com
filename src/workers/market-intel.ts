@@ -48,9 +48,9 @@ async function runMarketIntel(observedDate: Date) {
   const activeRows: Array<{
     neighborhood: string; category: string; bedrooms: number; rent_kes_cents: number;
   }> = await prisma.$queryRawUnsafe(`
-    SELECT neighborhood, category::text AS category, bedrooms, rent_kes_cents
+    SELECT neighborhood, category::text AS category, bedrooms, "rentKesCents" AS rent_kes_cents
     FROM "Listing"
-    WHERE status = 'ACTIVE' AND fraud_score < 60
+    WHERE status = 'ACTIVE' AND "fraudScore" < 60
   `);
 
   // Recently-rented → for days-to-rent (last 90 days).
@@ -58,10 +58,10 @@ async function runMarketIntel(observedDate: Date) {
     neighborhood: string; category: string; bedrooms: number; days_to_rent: number;
   }> = await prisma.$queryRawUnsafe(`
     SELECT neighborhood, category::text AS category, bedrooms,
-           EXTRACT(DAY FROM (rented_at - published_at))::int AS days_to_rent
+           EXTRACT(DAY FROM ("rentedAt" - "publishedAt"))::int AS days_to_rent
     FROM "Listing"
-    WHERE status = 'RENTED' AND rented_at IS NOT NULL AND published_at IS NOT NULL
-      AND rented_at > NOW() - INTERVAL '90 days'
+    WHERE status = 'RENTED' AND "rentedAt" IS NOT NULL AND "publishedAt" IS NOT NULL
+      AND "rentedAt" > NOW() - INTERVAL '90 days'
   `);
 
   // Counts of inquiries & viewings per segment (last 30 days).
@@ -69,16 +69,16 @@ async function runMarketIntel(observedDate: Date) {
   const inquiryRows: Array<{ neighborhood: string; category: string; bedrooms: number; n: number }> =
     await prisma.$queryRawUnsafe(`
       SELECT l.neighborhood, l.category::text AS category, l.bedrooms, COUNT(*)::int AS n
-      FROM "Inquiry" i JOIN "Listing" l ON l.id = i.listing_id
-      WHERE i.created_at > $1
+      FROM "Inquiry" i JOIN "Listing" l ON l.id = i."listingId"
+      WHERE i."createdAt" > $1
       GROUP BY l.neighborhood, l.category, l.bedrooms
     `, activitySince);
 
   const viewingRows: Array<{ neighborhood: string; category: string; bedrooms: number; n: number }> =
     await prisma.$queryRawUnsafe(`
       SELECT l.neighborhood, l.category::text AS category, l.bedrooms, COUNT(*)::int AS n
-      FROM "Viewing" v JOIN "Listing" l ON l.id = v.listing_id
-      WHERE v.created_at > $1
+      FROM "Viewing" v JOIN "Listing" l ON l.id = v."listingId"
+      WHERE v."createdAt" > $1
       GROUP BY l.neighborhood, l.category, l.bedrooms
     `, activitySince);
 

@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { photoUrl } from "@/lib/format";
+import ListingPhoto from "@/components/ListingPhoto";
 
 export default function ImageGallery({ keys, alt }: { keys: string[]; alt: string }) {
   const [idx, setIdx] = useState(0);
@@ -44,8 +45,7 @@ export default function ImageGallery({ keys, alt }: { keys: string[]; alt: strin
           startX.current = null;
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={url} alt={`${alt} — photo ${idx + 1}`} className="h-full w-full object-cover" draggable={false} />
+        <ListingPhoto src={url} alt={`${alt} — photo ${idx + 1}`} className="h-full w-full object-cover" />
         {safeKeys.length > 1 && (
           <>
             <button
@@ -82,8 +82,7 @@ export default function ImageGallery({ keys, alt }: { keys: string[]; alt: strin
               onClick={() => setIdx(i)}
               className={`flex-none overflow-hidden rounded-md transition ${i === idx ? "ring-2 ring-brand-500" : "ring-1 ring-ink-200 hover:ring-brand-300"}`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photoUrl(k)!} alt="" className="h-16 w-24 object-cover" />
+              <ListingPhoto src={photoUrl(k)} alt="" className="h-16 w-24 object-cover" />
             </button>
           ))}
         </div>

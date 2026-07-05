@@ -16,9 +16,10 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "../db/client";
-import { parseSearchQuery } from "../prompts/search-parser";
+import { parseSearchQuery, heuristicParseSearchQuery } from "../prompts/search-parser";
 import { embed, rerank } from "../services/inference";
 import { recordEvent } from "../services/events";
+import { logger } from "../lib/logger";
 
 const QuerySchema = z.object({
   q: z.string().min(1).max(500),
@@ -29,14 +30,23 @@ export async function searchRoutes(app: FastifyInstance) {
   app.get("/v1/search", async (req, reply) => {
     const { q, limit } = QuerySchema.parse(req.query);
 
-    // Step 1: parse natural language → structured filters
-    const parsed = await parseSearchQuery(q);
-    const f = parsed.content;
+    // Step 1: parse natural language → structured filters.
+    // If Claude is unreachable, degrade to the deterministic parser —
+    // a keyword search beats a 500.
+    let degraded = false;
+    const f = await parseSearchQuery(q).then(
+      (r) => r.content,
+      (err) => {
+        logger.warn({ err }, "search parser unavailable — heuristic fallback");
+        degraded = true;
+        return heuristicParseSearchQuery(q);
+      },
+    );
 
     // Step 2: SQL filter pass — narrow to plausible candidates.
     // Using Prisma's raw SQL for pgvector — we'll add the geo + vector
     // similarity in a single query for efficiency.
-    const filterClauses: string[] = ["status = 'ACTIVE'", "fraud_score < 60"];
+    const filterClauses: string[] = ["status = 'ACTIVE'", '"fraudScore" < 60'];
     const params: any[] = [];
     let p = 1;
 
@@ -56,12 +66,12 @@ export async function searchRoutes(app: FastifyInstance) {
       p++;
     }
     if (f.rentMaxKes !== null) {
-      filterClauses.push(`rent_kes_cents <= $${p}`);
+      filterClauses.push(`"rentKesCents" <= $${p}`);
       params.push(f.rentMaxKes * 100);
       p++;
     }
     if (f.rentMinKes !== null) {
-      filterClauses.push(`rent_kes_cents >= $${p}`);
+      filterClauses.push(`"rentKesCents" >= $${p}`);
       params.push(f.rentMinKes * 100);
       p++;
     }
@@ -71,17 +81,15 @@ export async function searchRoutes(app: FastifyInstance) {
       p++;
     }
 
-    // Step 3: embed semantic intent
-    const queryVec = await embed(f.semanticQuery || q);
+    // Step 3: embed semantic intent. If the inference box is down, fall
+    // back to filter-only SQL ordered by recency.
+    const queryVec = await embed(f.semanticQuery || q).catch((err: unknown) => {
+      logger.warn({ err }, "embedding service unavailable — filter-only search");
+      degraded = true;
+      return null;
+    });
 
-    // Step 4: vector similarity over filtered candidates. Cosine distance,
-    // limit 50 for the reranker pass.
-    params.push(`[${queryVec.join(",")}]`);
-    const vecParam = `$${p}`;
-    p++;
-    params.push(50);
-
-    const candidates: Array<{
+    type CandidateRow = {
       id: string;
       title: string;
       neighborhood: string;
@@ -90,36 +98,69 @@ export async function searchRoutes(app: FastifyInstance) {
       primary_photo_key: string | null;
       description: string;
       score: number;
-    }> = await prisma.$queryRawUnsafe(
-      `
-      SELECT id, title, neighborhood, rent_kes_cents, bedrooms,
-             primary_photo_key, description,
-             1 - (embedding <=> ${vecParam}::vector) AS score
-      FROM "Listing"
-      WHERE ${filterClauses.join(" AND ")}
-        AND embedding IS NOT NULL
-      ORDER BY embedding <=> ${vecParam}::vector
-      LIMIT $${p}
-      `,
-      ...params
-    );
+    };
+
+    // Step 4: vector similarity over filtered candidates (cosine distance,
+    // limit 50 for the reranker pass) — or recency order in degraded mode.
+    // Degraded mode also drops the embedding IS NOT NULL clause: enrichment
+    // may not have run yet either, and unranked results beat none.
+    let candidates: CandidateRow[];
+    if (queryVec) {
+      params.push(`[${queryVec.join(",")}]`);
+      const vecParam = `$${p}`;
+      p++;
+      params.push(50);
+      candidates = await prisma.$queryRawUnsafe(
+        `
+        SELECT id, title, neighborhood, "rentKesCents" AS rent_kes_cents, bedrooms,
+               "primaryPhotoKey" AS primary_photo_key, description,
+               1 - (embedding <=> ${vecParam}::vector) AS score
+        FROM "Listing"
+        WHERE ${filterClauses.join(" AND ")}
+          AND embedding IS NOT NULL
+        ORDER BY embedding <=> ${vecParam}::vector
+        LIMIT $${p}
+        `,
+        ...params
+      );
+    } else {
+      params.push(limit);
+      candidates = await prisma.$queryRawUnsafe(
+        `
+        SELECT id, title, neighborhood, "rentKesCents" AS rent_kes_cents, bedrooms,
+               "primaryPhotoKey" AS primary_photo_key, description,
+               0::float8 AS score
+        FROM "Listing"
+        WHERE ${filterClauses.join(" AND ")}
+        ORDER BY "publishedAt" DESC NULLS LAST
+        LIMIT $${p}
+        `,
+        ...params
+      );
+    }
 
     if (candidates.length === 0) {
       return reply.send({
         filters: f,
         clarifyingQuestion: f.clarifyingQuestion,
         results: [],
+        degraded,
         suggestion: f.neighborhoods.length
           ? "No matches in those neighborhoods. Try expanding your area or budget."
           : null,
       });
     }
 
-    // Step 5: rerank — fewer false positives at the top.
+    // Step 5: rerank — fewer false positives at the top. If the reranker
+    // is down, keep the existing (vector or recency) order.
     const ranked = await rerank({
       query: f.semanticQuery || q,
       docs: candidates.map((c) => `${c.title}. ${c.description}`),
       topK: limit,
+    }).catch((err: unknown) => {
+      logger.warn({ err }, "reranker unavailable — keeping candidate order");
+      degraded = true;
+      return candidates.slice(0, limit).map((c, index) => ({ index, score: c.score }));
     });
 
     const results = ranked.map((r) => ({
@@ -150,6 +191,7 @@ export async function searchRoutes(app: FastifyInstance) {
       filters: f,
       clarifyingQuestion: f.clarifyingQuestion,
       results,
+      degraded,
     });
   });
 }
