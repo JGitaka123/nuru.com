@@ -52,7 +52,7 @@ export default function ImageGallery({ keys, alt }: { keys: string[]; alt: strin
               type="button"
               aria-label="Previous photo"
               onClick={prev}
-              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/85 p-2 shadow hover:bg-white"
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-surface/85 p-2 shadow hover:bg-surface"
             >
               <span aria-hidden="true">‹</span>
             </button>
@@ -60,7 +60,7 @@ export default function ImageGallery({ keys, alt }: { keys: string[]; alt: strin
               type="button"
               aria-label="Next photo"
               onClick={next}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/85 p-2 shadow hover:bg-white"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-surface/85 p-2 shadow hover:bg-surface"
             >
               <span aria-hidden="true">›</span>
             </button>

@@ -52,7 +52,7 @@ export default function MyViewingsPage() {
       ) : (
         <ul className="space-y-3">
           {items.map((v) => (
-            <li key={v.id} className="flex items-center justify-between gap-4 rounded-xl border border-ink-200 bg-white p-4">
+            <li key={v.id} className="flex items-center justify-between gap-4 rounded-xl border border-ink-200 bg-surface p-4">
               <div>
                 <Link href={`/listing/${v.listing.id}`} className="font-semibold hover:text-brand-600">
                   {v.listing.title}

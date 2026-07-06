@@ -35,7 +35,7 @@ function ComparePageInner() {
   if (loading) return <div className="text-ink-500">Loading…</div>;
   if (items.length === 0) {
     return (
-      <div className="rounded-xl bg-white p-8 text-center">
+      <div className="rounded-xl bg-surface p-8 text-center">
         <p>No listings to compare. Add up to 4 from search results.</p>
         <Link href="/search" className="mt-3 inline-block rounded-md bg-brand-500 px-4 py-2 font-semibold text-white">Browse listings</Link>
       </div>
@@ -47,7 +47,7 @@ function ComparePageInner() {
       <h1 className="text-3xl font-bold">Compare {items.length} listing{items.length === 1 ? "" : "s"}</h1>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full bg-white text-sm ring-1 ring-ink-200">
+        <table className="min-w-full bg-surface text-sm ring-1 ring-ink-200">
           <thead>
             <tr>
               <th className="w-40 bg-ink-50 px-3 py-2 text-left text-xs uppercase tracking-wide text-ink-500"></th>

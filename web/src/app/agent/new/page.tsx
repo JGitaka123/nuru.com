@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import MapPinPicker from "@/components/MapPinPicker";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
 
@@ -22,6 +23,7 @@ export default function NewListingPage() {
   const [uploading, setUploading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -87,6 +89,7 @@ export default function NewListingPage() {
           estate: form.estate || undefined,
           photoKeys: photos.map((p) => p.key),
           primaryPhotoKey: photos[0].key,
+          ...(pin ? { lat: pin.lat, lng: pin.lng } : {}),
         },
       });
       // Trigger AI enrichment.
@@ -106,7 +109,7 @@ export default function NewListingPage() {
     <form onSubmit={handleCreate} className="space-y-6">
       <h1 className="text-3xl font-bold">New listing</h1>
 
-      <section className="rounded-xl bg-white p-6 ring-1 ring-ink-200">
+      <section className="rounded-xl bg-surface p-6 ring-1 ring-ink-200">
         <h2 className="font-semibold">Photos</h2>
         <p className="text-sm text-ink-500">3-10 photos. We&apos;ll use AI to help draft the title and description.</p>
         <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-5">
@@ -128,7 +131,7 @@ export default function NewListingPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 rounded-xl bg-white p-6 ring-1 ring-ink-200 sm:grid-cols-2">
+      <section className="grid gap-4 rounded-xl bg-surface p-6 ring-1 ring-ink-200 sm:grid-cols-2">
         <Field label="Listing title">
           <input
             value={form.title}
@@ -152,6 +155,14 @@ export default function NewListingPage() {
             value={form.estate}
             onChange={(e) => setForm({ ...form, estate: e.target.value })}
             className="w-full rounded-lg border border-ink-200 px-3 py-2"
+          />
+        </Field>
+        <Field label="Pin on map (optional)">
+          <MapPinPicker
+            lat={pin?.lat ?? null}
+            lng={pin?.lng ?? null}
+            neighborhood={form.neighborhood}
+            onChange={(lat, lng) => setPin({ lat, lng })}
           />
         </Field>
         <Field label="Type">

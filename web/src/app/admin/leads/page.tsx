@@ -114,7 +114,7 @@ export default function AdminLeadsPage() {
       <h1 className="text-3xl font-bold">Leads</h1>
 
       {showCreate && (
-        <form onSubmit={create} className="grid gap-3 rounded-xl bg-white p-4 ring-1 ring-ink-200 sm:grid-cols-2">
+        <form onSubmit={create} className="grid gap-3 rounded-xl bg-surface p-4 ring-1 ring-ink-200 sm:grid-cols-2">
           <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="rounded-lg border border-ink-200 px-3 py-2">
             {TYPES.map((t) => <option key={t}>{t}</option>)}
           </select>
@@ -131,11 +131,11 @@ export default function AdminLeadsPage() {
       )}
 
       <div className="flex gap-2 text-sm">
-        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="rounded-lg border border-ink-200 bg-white px-3 py-1.5">
+        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="rounded-lg border border-ink-200 bg-surface px-3 py-1.5">
           <option value="">All types</option>
           {TYPES.map((t) => <option key={t}>{t}</option>)}
         </select>
-        <select value={filterStage} onChange={(e) => setFilterStage(e.target.value)} className="rounded-lg border border-ink-200 bg-white px-3 py-1.5">
+        <select value={filterStage} onChange={(e) => setFilterStage(e.target.value)} className="rounded-lg border border-ink-200 bg-surface px-3 py-1.5">
           <option value="">All stages</option>
           {STAGES.map((s) => <option key={s}>{s}</option>)}
         </select>
@@ -149,7 +149,7 @@ export default function AdminLeadsPage() {
         <p className="text-ink-500">No leads yet.</p>
       ) : (
         <div className="overflow-hidden rounded-xl border border-ink-200">
-          <table className="w-full bg-white text-sm">
+          <table className="w-full bg-surface text-sm">
             <thead className="bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
               <tr>
                 <th className="px-3 py-2">Organization</th>

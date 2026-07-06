@@ -73,7 +73,7 @@ export default function AdminVerificationPage() {
       ) : (
         <ul className="space-y-3">
           {items.map((user) => (
-            <li key={user.id} className="rounded-xl border border-ink-200 bg-white p-4">
+            <li key={user.id} className="rounded-xl border border-ink-200 bg-surface p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="font-semibold">{user.name ?? "Unnamed user"}</p>

@@ -75,11 +75,18 @@ async function main() {
   console.log(`  tenant: ${tenant.id}`);
 
   // 4. A few demo listings.
+  const CENTROIDS: Record<string, [number, number]> = {
+    Kilimani: [-1.2912, 36.7834],
+    Westlands: [-1.267, 36.8074],
+    Kileleshwa: [-1.272, 36.7876],
+    Lavington: [-1.2768, 36.7651],
+    Parklands: [-1.263, 36.8186],
+  };
   for (let i = 0; i < 6; i++) {
     const neighborhood = NEIGHBORHOODS[i % NEIGHBORHOODS.length];
     const bedrooms = (i % 3) + 1;
     const rentKes = 35_000 + i * 8_500 + bedrooms * 12_000;
-    await prisma.listing.create({
+    const listing = await prisma.listing.create({
       data: {
         agentId: agent.id,
         title: `${bedrooms}BR ${neighborhood} apartment`,
@@ -101,6 +108,12 @@ async function main() {
         aiQualityScore: 0.7 + i * 0.04,
       },
     });
+    // Coordinates via raw SQL — location is Unsupported() in Prisma.
+    const [lat, lng] = CENTROIDS[neighborhood] ?? [-1.286, 36.819];
+    await prisma.$executeRaw`
+      UPDATE "Listing"
+      SET location = ST_SetSRID(ST_MakePoint(${lng + (i % 3) * 0.002}, ${lat + (i % 2) * 0.002}), 4326)::geography
+      WHERE id = ${listing.id}`;
   }
   console.log("  6 demo listings created");
 

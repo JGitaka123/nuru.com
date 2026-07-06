@@ -97,6 +97,8 @@ export async function searchRoutes(app: FastifyInstance) {
       bedrooms: number;
       primary_photo_key: string | null;
       description: string;
+      lat: number | null;
+      lng: number | null;
       score: number;
     };
 
@@ -114,6 +116,7 @@ export async function searchRoutes(app: FastifyInstance) {
         `
         SELECT id, title, neighborhood, "rentKesCents" AS rent_kes_cents, bedrooms,
                "primaryPhotoKey" AS primary_photo_key, description,
+               ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng,
                1 - (embedding <=> ${vecParam}::vector) AS score
         FROM "Listing"
         WHERE ${filterClauses.join(" AND ")}
@@ -129,6 +132,7 @@ export async function searchRoutes(app: FastifyInstance) {
         `
         SELECT id, title, neighborhood, "rentKesCents" AS rent_kes_cents, bedrooms,
                "primaryPhotoKey" AS primary_photo_key, description,
+               ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng,
                0::float8 AS score
         FROM "Listing"
         WHERE ${filterClauses.join(" AND ")}

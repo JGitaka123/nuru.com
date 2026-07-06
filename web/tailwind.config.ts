@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
@@ -18,18 +19,22 @@ const config: Config = {
           800: "#92340e",
           900: "#782b0f",
         },
+        // Neutrals come from CSS variables so .dark can invert the ramp
+        // (see globals.css) without touching any component classes.
         ink: {
-          50: "#f6f7f9",
-          100: "#ecedf2",
-          200: "#d5d8e1",
-          300: "#b1b6c5",
-          400: "#878fa5",
-          500: "#6b7389",
-          600: "#555c70",
-          700: "#454b5b",
-          800: "#3b404e",
-          900: "#1f232c",
+          50: "rgb(var(--ink-50) / <alpha-value>)",
+          100: "rgb(var(--ink-100) / <alpha-value>)",
+          200: "rgb(var(--ink-200) / <alpha-value>)",
+          300: "rgb(var(--ink-300) / <alpha-value>)",
+          400: "rgb(var(--ink-400) / <alpha-value>)",
+          500: "rgb(var(--ink-500) / <alpha-value>)",
+          600: "rgb(var(--ink-600) / <alpha-value>)",
+          700: "rgb(var(--ink-700) / <alpha-value>)",
+          800: "rgb(var(--ink-800) / <alpha-value>)",
+          900: "rgb(var(--ink-900) / <alpha-value>)",
         },
+        // Card/panel background: white in light mode, raised slate in dark.
+        surface: "rgb(var(--surface) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],

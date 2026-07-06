@@ -37,6 +37,9 @@ export const ListingInputSchema = z.object({
   addressLine: z.string().max(200).optional(),
   photoKeys: z.array(z.string()).default([]),
   primaryPhotoKey: z.string().optional(),
+  // Map pin. Kenya bounding box; stored in the PostGIS location column.
+  lat: z.number().min(-4.9).max(5.1).optional(),
+  lng: z.number().min(33.9).max(41.9).optional(),
 });
 
 export type ListingInput = z.infer<typeof ListingInputSchema>;
@@ -45,14 +48,38 @@ export const ListingPatchSchema = ListingInputSchema.partial();
 export type ListingPatch = z.infer<typeof ListingPatchSchema>;
 
 export async function createListing(agentId: string, input: ListingInput) {
-  const data = ListingInputSchema.parse(input);
-  return prisma.listing.create({
+  const { lat, lng, ...data } = ListingInputSchema.parse(input);
+  const listing = await prisma.listing.create({
     data: {
       ...data,
       agentId,
       status: "DRAFT",
     },
   });
+  if (lat !== undefined && lng !== undefined) {
+    await setListingLocation(listing.id, lat, lng);
+  }
+  return listing;
+}
+
+/** location is Unsupported("geography") in Prisma, so writes go through SQL. */
+async function setListingLocation(listingId: string, lat: number, lng: number) {
+  await prisma.$executeRaw`
+    UPDATE "Listing"
+    SET location = ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography
+    WHERE id = ${listingId}`;
+}
+
+export interface ListingCoords {
+  lat: number | null;
+  lng: number | null;
+}
+
+export async function getListingCoords(listingId: string): Promise<ListingCoords> {
+  const rows = await prisma.$queryRaw<Array<{ lat: number | null; lng: number | null }>>`
+    SELECT ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng
+    FROM "Listing" WHERE id = ${listingId}`;
+  return rows[0] ?? { lat: null, lng: null };
 }
 
 export async function getListing(id: string) {
@@ -82,8 +109,12 @@ export async function updateListing(
   patch: ListingPatch,
 ) {
   await assertCanEdit(listingId, userId, role);
-  const data = ListingPatchSchema.parse(patch);
-  return prisma.listing.update({ where: { id: listingId }, data });
+  const { lat, lng, ...data } = ListingPatchSchema.parse(patch);
+  const updated = await prisma.listing.update({ where: { id: listingId }, data });
+  if (lat !== undefined && lng !== undefined) {
+    await setListingLocation(listingId, lat, lng);
+  }
+  return updated;
 }
 
 const ALLOWED_TRANSITIONS: Record<ListingStatus, ListingStatus[]> = {

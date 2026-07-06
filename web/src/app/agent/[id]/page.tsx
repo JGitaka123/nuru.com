@@ -77,7 +77,7 @@ export default function AgentListingPage({ params }: { params: { id: string } })
         ))}
       </div>
 
-      <section className="rounded-xl bg-white p-6 ring-1 ring-ink-200">
+      <section className="rounded-xl bg-surface p-6 ring-1 ring-ink-200">
         <h2 className="font-semibold">Description</h2>
         <p className="mt-2 whitespace-pre-line text-ink-700">{listing.description}</p>
       </section>

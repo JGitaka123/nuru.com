@@ -4,6 +4,34 @@
 
 :root {
   color-scheme: light;
+  /* ink ramp (space-separated RGB for Tailwind <alpha-value>) */
+  --ink-50: 246 247 249;
+  --ink-100: 236 237 242;
+  --ink-200: 213 216 225;
+  --ink-300: 177 182 197;
+  --ink-400: 135 143 165;
+  --ink-500: 107 115 137;
+  --ink-600: 85 92 112;
+  --ink-700: 69 75 91;
+  --ink-800: 59 64 78;
+  --ink-900: 31 35 44;
+  --surface: 255 255 255;
+}
+
+/* Dark theme: same ramp, inverted, so existing ink-* classes just work. */
+.dark {
+  color-scheme: dark;
+  --ink-50: 22 25 31;     /* page background */
+  --ink-100: 35 39 47;
+  --ink-200: 48 53 65;
+  --ink-300: 69 75 91;
+  --ink-400: 107 115 137;
+  --ink-500: 135 143 165;
+  --ink-600: 177 182 197;
+  --ink-700: 213 216 225;
+  --ink-800: 228 230 236;
+  --ink-900: 240 241 245; /* primary text */
+  --surface: 33 37 45;    /* cards */
 }
 
 html, body {

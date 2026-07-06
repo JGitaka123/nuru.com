@@ -3,7 +3,11 @@ import "./globals.css";
 import ServiceWorkerRegister from "./sw-register";
 import { ToastViewport } from "@/components/Toast";
 import HeaderNav from "@/components/HeaderNav";
-import Link from "next/link";
+import Footer from "@/components/Footer";
+import { LangProvider } from "@/lib/i18n";
+
+// Applied before paint so a dark-mode reload never flashes white.
+const THEME_SCRIPT = `try{var t=localStorage.getItem("nuru-theme");if(t==="dark"||(!t&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark");var l=localStorage.getItem("nuru-lang");if(l)document.documentElement.lang=l;}catch(e){}`;
 
 export const metadata: Metadata = {
   title: "Nuru — Find your home in Nairobi",
@@ -28,21 +32,16 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <HeaderNav />
-        <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
-        <ServiceWorkerRegister />
-        <ToastViewport />
-        <footer className="border-t border-ink-200 bg-white">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-6 text-sm text-ink-500">
-            <span>© {new Date().getFullYear()} Nuru. Long-term rentals in Nairobi.</span>
-            <nav className="flex gap-4">
-              <Link href="/privacy" className="hover:text-brand-600">Privacy</Link>
-              <a href="mailto:hello@nuru.com" className="hover:text-brand-600">Contact</a>
-            </nav>
-          </div>
-        </footer>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <LangProvider>
+          <HeaderNav />
+          <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+          <ServiceWorkerRegister />
+          <ToastViewport />
+          <Footer />
+        </LangProvider>
       </body>
     </html>
   );

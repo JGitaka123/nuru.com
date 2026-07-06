@@ -53,7 +53,7 @@ export default function MyApplicationsPage() {
       ) : (
         <ul className="space-y-3">
           {items.map((a) => (
-            <li key={a.id} className="flex gap-4 rounded-xl border border-ink-200 bg-white p-4">
+            <li key={a.id} className="flex gap-4 rounded-xl border border-ink-200 bg-surface p-4">
               <div className="h-20 w-20 flex-none overflow-hidden rounded-lg bg-ink-100">
                 {a.listing.primaryPhotoKey && photoUrl(a.listing.primaryPhotoKey) ? (
                   // eslint-disable-next-line @next/next/no-img-element

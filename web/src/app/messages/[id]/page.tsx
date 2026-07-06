@@ -78,7 +78,7 @@ export default function MessageThreadPage({ params }: { params: { id: string } }
   }
 
   return (
-    <div className="flex h-[70vh] flex-col rounded-xl bg-white ring-1 ring-ink-200">
+    <div className="flex h-[70vh] flex-col rounded-xl bg-surface ring-1 ring-ink-200">
       <div className="flex-1 space-y-2 overflow-y-auto p-4">
         {messages.map((m) => {
           const mine = m.senderId === me;

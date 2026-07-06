@@ -11,7 +11,7 @@ export default async function UnsubscribePage({ searchParams }: PageProps) {
   const ok = email ? await unsubscribe(email) : false;
 
   return (
-    <main className="mx-auto max-w-xl rounded-xl bg-white p-8 text-center ring-1 ring-ink-200">
+    <main className="mx-auto max-w-xl rounded-xl bg-surface p-8 text-center ring-1 ring-ink-200">
       <h1 className="text-3xl font-bold">{ok ? "You're unsubscribed" : "We could not unsubscribe you"}</h1>
       <p className="mt-3 text-ink-600">
         {ok

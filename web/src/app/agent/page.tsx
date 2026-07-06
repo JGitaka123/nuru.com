@@ -40,7 +40,7 @@ export default function AgentDashboard() {
   if (error) return <div className="rounded-lg bg-red-50 p-4 text-red-700">{error}</div>;
   if (user && user.role !== "AGENT" && user.role !== "LANDLORD" && user.role !== "ADMIN") {
     return (
-      <div className="rounded-xl bg-white p-8">
+      <div className="rounded-xl bg-surface p-8">
         <h1 className="text-xl font-bold">Agent dashboard</h1>
         <p className="mt-2 text-ink-600">This area is for agents and landlords. Switch your account or contact us.</p>
       </div>
@@ -55,10 +55,10 @@ export default function AgentDashboard() {
           <p className="text-ink-600">Hi {user?.name ?? "there"} — let&apos;s get your properties in front of tenants.</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/agent/analytics" className="rounded-lg border border-ink-300 bg-white px-4 py-2 font-medium hover:bg-ink-50">
+          <Link href="/agent/analytics" className="rounded-lg border border-ink-300 bg-surface px-4 py-2 font-medium hover:bg-ink-50">
             Analytics
           </Link>
-          <Link href="/agent/inbox" className="rounded-lg border border-ink-300 bg-white px-4 py-2 font-medium hover:bg-ink-50">
+          <Link href="/agent/inbox" className="rounded-lg border border-ink-300 bg-surface px-4 py-2 font-medium hover:bg-ink-50">
             Inbox
           </Link>
           <Link href="/agent/new" className="rounded-lg bg-brand-500 px-4 py-2 font-semibold text-white hover:bg-brand-600">
@@ -87,7 +87,7 @@ export default function AgentDashboard() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {listings.map((l) => (
-            <Link key={l.id} href={`/agent/${l.id}`} className="flex gap-4 rounded-xl border border-ink-200 bg-white p-4 hover:shadow-md">
+            <Link key={l.id} href={`/agent/${l.id}`} className="flex gap-4 rounded-xl border border-ink-200 bg-surface p-4 hover:shadow-md">
               <div className="h-24 w-24 flex-none overflow-hidden rounded-lg bg-ink-100">
                 {l.primaryPhotoKey && photoUrl(l.primaryPhotoKey) ? (
                   // eslint-disable-next-line @next/next/no-img-element

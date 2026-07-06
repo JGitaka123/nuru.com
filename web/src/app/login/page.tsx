@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, setToken, type SessionUser } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 type Step = "phone" | "code" | "profile";
 
 export default function LoginPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
@@ -78,13 +80,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md space-y-4 rounded-xl bg-white p-8 shadow-sm">
-      <h1 className="text-2xl font-bold">Sign in to Nuru</h1>
+    <div className="mx-auto max-w-md space-y-4 rounded-xl bg-surface p-8 shadow-sm">
+      <h1 className="text-2xl font-bold">{t("login.title")}</h1>
 
       {step === "phone" && (
         <form onSubmit={requestOtp} className="space-y-4">
           <label className="block">
-            <span className="text-sm text-ink-600">Phone number</span>
+            <span className="text-sm text-ink-600">{t("login.phoneLabel")}</span>
             <input
               type="tel"
               value={phone}
@@ -95,23 +97,23 @@ export default function LoginPage() {
             />
           </label>
           <button disabled={loading} className="w-full rounded-lg bg-brand-500 py-3 font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
-            {loading ? "Sending…" : "Send code"}
+            {loading ? t("login.sending") : t("login.sendCode")}
           </button>
-          <p className="text-xs text-ink-500">We&apos;ll text you a 6-digit code. Standard SMS rates apply.</p>
+          <p className="text-xs text-ink-500">{t("login.smsNote")}</p>
           {error && <p className="text-sm text-red-600">{error}</p>}
         </form>
       )}
 
       {step === "code" && (
         <form onSubmit={verifyOtp} className="space-y-4">
-          <p className="text-sm text-ink-600">Code sent to <strong>{phone}</strong>.</p>
+          <p className="text-sm text-ink-600">{t("login.codeSentTo")} <strong>{phone}</strong>.</p>
           {devCode && (
             <div className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
               Dev mode: code is <strong>{devCode}</strong>
             </div>
           )}
           <label className="block">
-            <span className="text-sm text-ink-600">Verification code</span>
+            <span className="text-sm text-ink-600">{t("login.codeLabel")}</span>
             <input
               inputMode="numeric"
               maxLength={6}
@@ -122,10 +124,10 @@ export default function LoginPage() {
             />
           </label>
           <button disabled={loading || code.length !== 6} className="w-full rounded-lg bg-brand-500 py-3 font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
-            {loading ? "Verifying…" : "Sign in"}
+            {loading ? t("login.verifying") : t("login.signIn")}
           </button>
           <button type="button" onClick={() => setStep("phone")} className="w-full text-sm text-ink-500 hover:underline">
-            Use a different number
+            {t("login.differentNumber")}
           </button>
           {error && <p className="text-sm text-red-600">{error}</p>}
         </form>
@@ -133,9 +135,9 @@ export default function LoginPage() {
 
       {step === "profile" && isNewUser && (
         <form onSubmit={saveProfile} className="space-y-4">
-          <p className="text-sm text-ink-600">Welcome to Nuru! Just a couple of details:</p>
+          <p className="text-sm text-ink-600">{t("login.welcome")}</p>
           <label className="block">
-            <span className="text-sm text-ink-600">Your name</span>
+            <span className="text-sm text-ink-600">{t("login.yourName")}</span>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -144,18 +146,18 @@ export default function LoginPage() {
             />
           </label>
           <fieldset>
-            <legend className="text-sm text-ink-600">I am a…</legend>
+            <legend className="text-sm text-ink-600">{t("login.iAm")}</legend>
             <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
               {(["TENANT", "AGENT", "LANDLORD"] as const).map((r) => (
                 <label key={r} className={`cursor-pointer rounded-lg border px-3 py-2 text-center ${role === r ? "border-brand-400 bg-brand-50 text-brand-800" : "border-ink-200"}`}>
                   <input type="radio" name="role" value={r} checked={role === r} onChange={() => setRole(r)} className="sr-only" />
-                  {r === "TENANT" ? "Tenant" : r === "AGENT" ? "Agent" : "Landlord"}
+                  {r === "TENANT" ? t("login.tenant") : r === "AGENT" ? t("login.agent") : t("login.landlord")}
                 </label>
               ))}
             </div>
           </fieldset>
           <button disabled={loading} className="w-full rounded-lg bg-brand-500 py-3 font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
-            Continue
+            {t("login.continue")}
           </button>
         </form>
       )}

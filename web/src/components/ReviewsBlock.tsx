@@ -66,7 +66,7 @@ export default function ReviewsBlock({ listingId }: { listingId: string }) {
       </div>
 
       {showForm && (
-        <form onSubmit={submit} className="rounded-xl bg-white p-4 ring-1 ring-ink-200">
+        <form onSubmit={submit} className="rounded-xl bg-surface p-4 ring-1 ring-ink-200">
           <div className="flex gap-1" role="radiogroup" aria-label="Rating">
             {[1, 2, 3, 4, 5].map((n) => (
               <button
@@ -98,7 +98,7 @@ export default function ReviewsBlock({ listingId }: { listingId: string }) {
       ) : (
         <ul className="space-y-2">
           {items.map((r) => (
-            <li key={r.id} className="rounded-xl bg-white p-4 ring-1 ring-ink-200">
+            <li key={r.id} className="rounded-xl bg-surface p-4 ring-1 ring-ink-200">
               <div className="flex items-center gap-2">
                 <span className="text-amber-500">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
                 {r.verified && <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800">Verified</span>}
