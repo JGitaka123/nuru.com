@@ -1,5 +1,12 @@
 name: Deploy Database
 
+# Manually-triggered migration runner: applies the committed Prisma
+# migrations (pnpm db:deploy → prisma migrate deploy) to the database
+# named by the DATABASE_URL / DIRECT_URL repo secrets.
+#
+# pnpm version comes from package.json's packageManager field (9.x) —
+# do not also pin it here; pnpm/action-setup@v4 errors when both are set.
+
 on:
   workflow_dispatch:
 
@@ -21,8 +28,6 @@ jobs:
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
