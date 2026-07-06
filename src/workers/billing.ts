@@ -10,12 +10,19 @@ import { prisma } from "../db/client";
 import { logger } from "../lib/logger";
 import { redis, type BillingJob } from "./queues";
 import { chargeInvoice, rolloverPeriod } from "../services/billing";
+import { isFreeLaunch, freeLaunchUntil } from "../services/plans";
 
 export function startBillingWorker() {
   const worker = new BullWorker<BillingJob>(
     "billing",
     async () => {
       const now = new Date();
+
+      // Free-launch window: nothing gets charged, retried, or rolled over.
+      if (isFreeLaunch(now)) {
+        logger.info({ until: freeLaunchUntil() }, "billing: free launch active — skipping run");
+        return;
+      }
 
       // 1. Charge OPEN/FAILED invoices that are due.
       const due = await prisma.invoice.findMany({

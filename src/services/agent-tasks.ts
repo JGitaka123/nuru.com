@@ -15,6 +15,7 @@ import type { AgentTaskKind } from "@prisma/client";
 import { prisma } from "../db/client";
 import { logger } from "../lib/logger";
 import { draftClientSuccess } from "../prompts/client-success";
+import { isFreeLaunch } from "./plans";
 import { send as sendEmail } from "./email";
 import { sendSms } from "./notifications";
 import { recordEvent } from "./events";
@@ -40,6 +41,15 @@ export async function scanAndCreateTasks(): Promise<{ created: number }> {
   });
   for (const u of noListingUsers) {
     if (await ensureTask(u.id, "ONBOARDING_NUDGE", now)) created++;
+  }
+
+  // Everything below targets billing states (trial ending, payment
+  // failed, renewal, churn/upsell on paid tiers). During the free-launch
+  // window nobody should be asked to pay and paid tiers don't exist yet,
+  // so the onboarding nudge above is the only scanner that runs.
+  if (isFreeLaunch(now)) {
+    logger.info({ created }, "agent-task scan done (free launch — billing nudges skipped)");
+    return { created };
   }
 
   // 2. Trial ending in 3 days / today / ended.

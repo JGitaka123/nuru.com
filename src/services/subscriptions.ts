@@ -16,7 +16,7 @@ import { z } from "zod";
 import type { Subscription } from "@prisma/client";
 import { prisma } from "../db/client";
 import { ConflictError, NotFoundError, ValidationError } from "../lib/errors";
-import { planFor, type PlanFeatures } from "./plans";
+import { planFor, effectivePlan, freeLaunchUntil, isFreeLaunch, type PlanFeatures } from "./plans";
 import { logger } from "../lib/logger";
 import { recordEvent } from "./events";
 
@@ -32,11 +32,29 @@ export const ChangePlanSchema = z.object({
  * their role to AGENT/LANDLORD or first hits the agent dashboard.
  */
 export async function ensureTrial(userId: string): Promise<Subscription> {
-  const existing = await prisma.subscription.findUnique({ where: { userId } });
-  if (existing) return existing;
-
   const now = new Date();
-  const trialEnd = new Date(now.getTime() + TRIAL_DAYS * 86_400_000);
+  const launchEnd = isFreeLaunch(now) ? freeLaunchUntil() : null;
+
+  const existing = await prisma.subscription.findUnique({ where: { userId } });
+  if (existing) {
+    // Free-launch window: lazily extend still-trialing accounts (including
+    // ones created before the window opened) to the window end.
+    if (
+      launchEnd &&
+      existing.status === "TRIALING" &&
+      existing.trialEndsAt &&
+      existing.trialEndsAt < launchEnd
+    ) {
+      return prisma.subscription.update({
+        where: { userId },
+        data: { trialEndsAt: launchEnd, currentPeriodEnd: launchEnd },
+      });
+    }
+    return existing;
+  }
+
+  const defaultEnd = new Date(now.getTime() + TRIAL_DAYS * 86_400_000);
+  const trialEnd = launchEnd && launchEnd > defaultEnd ? launchEnd : defaultEnd;
 
   const sub = await prisma.subscription.create({
     data: {
@@ -177,7 +195,7 @@ export async function canCreateListing(userId: string): Promise<{ ok: boolean; r
   if (sub.status === "EXPIRED" || sub.status === "PAUSED") {
     return { ok: false, reason: `Subscription is ${sub.status}`, current: 0, cap: 0 };
   }
-  const plan = planFor(sub.planTier);
+  const plan = effectivePlan(sub.planTier);
   if (plan.maxActiveListings === null) {
     return { ok: true, current: 0, cap: null };
   }
@@ -198,7 +216,7 @@ export async function canCreateListing(userId: string): Promise<{ ok: boolean; r
 export async function feature(userId: string, key: keyof PlanFeatures): Promise<boolean> {
   const sub = await prisma.subscription.findUnique({ where: { userId } });
   if (!sub || sub.status === "EXPIRED" || sub.status === "PAUSED") return false;
-  const plan = planFor(sub.planTier);
+  const plan = effectivePlan(sub.planTier);
   const v = plan.features[key];
   return typeof v === "boolean" ? v : v > 0;
 }

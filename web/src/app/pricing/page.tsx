@@ -48,14 +48,34 @@ async function fetchPlans(): Promise<PlanDef[]> {
   }
 }
 
+function freeLaunchUntil(): Date | null {
+  const raw = process.env.NEXT_PUBLIC_FREE_LAUNCH_UNTIL;
+  if (!raw) return null;
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) || d < new Date() ? null : d;
+}
+
 export default async function PricingPage() {
   const plans = await fetchPlans();
+  const launchEnd = freeLaunchUntil();
 
   return (
     <div className="space-y-10">
       <header className="text-center">
         <h1 className="text-4xl font-bold sm:text-5xl">Simple, fair pricing</h1>
         <p className="mt-3 text-lg text-ink-600">Free for 30 days. Pay only when you're getting value. M-Pesa monthly billing.</p>
+        {launchEnd && (
+          <div className="mx-auto mt-5 max-w-2xl rounded-xl bg-brand-50 px-5 py-4 ring-1 ring-brand-200 dark:bg-brand-900/20 dark:ring-brand-900/40">
+            <p className="font-semibold text-brand-800 dark:text-brand-300">
+              🎉 Launch offer: Nuru is completely free until{" "}
+              {launchEnd.toLocaleDateString("en-KE", { day: "numeric", month: "long", year: "numeric" })}.
+            </p>
+            <p className="mt-1 text-sm text-brand-700 dark:text-brand-400">
+              Every account gets Silver-level features — 30 listings, priority rank, WhatsApp autoreply.
+              No card, no M-Pesa charge. Paid plans start after the launch period.
+            </p>
+          </div>
+        )}
       </header>
 
       <section className="grid gap-4 lg:grid-cols-5">

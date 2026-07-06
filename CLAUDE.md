@@ -187,6 +187,11 @@ comment above the call.
 - [x] **Swahili i18n** — EN/SW dictionary + provider (`web/src/lib/i18n.tsx`),
       header toggle; covers nav, footer, home, search, login. Agent/admin
       tooling stays English for now.
+- [x] **Free-launch mode** — `FREE_LAUNCH_UNTIL` (+ `NEXT_PUBLIC_FREE_LAUNCH_UNTIL`
+      on web): while the date is in the future the product is free — trials
+      extend to the window end, TRIAL/BRONZE gate as SILVER, billing worker
+      and trial/payment CRM nudges pause, pricing page shows a launch
+      banner. Flips itself off when the date passes; no deploy needed.
 - [x] **Per-listing coordinates** — lat/lng accepted on listing create/update
       (PostGIS via raw SQL, GiST index migration), returned from listing
       detail + search; agent map-pin picker on /agent/new; real pins in

@@ -182,3 +182,39 @@ export async function seedPlans(): Promise<void> {
 export function planFor(tier: PlanTier): PlanDefinition {
   return PLANS[tier];
 }
+
+// ---------------------------------------------------------------------------
+// Free-launch window
+//
+// Growth phase: run the whole product free until FREE_LAUNCH_UNTIL (ISO
+// date). While the window is open:
+//   - trials extend to the window end instead of 30 days,
+//   - TRIAL accounts are gated as if on SILVER (30 listings, autoreply,
+//     priority rank) so the free product is genuinely usable,
+//   - subscription charging and trial/payment CRM nudges pause.
+// When the date passes (or the env var is unset) everything reverts to
+// normal billing with no deploy needed.
+// ---------------------------------------------------------------------------
+
+export function freeLaunchUntil(): Date | null {
+  const raw = process.env.FREE_LAUNCH_UNTIL;
+  if (!raw) return null;
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+export function isFreeLaunch(now: Date = new Date()): boolean {
+  const until = freeLaunchUntil();
+  return until !== null && now < until;
+}
+
+/**
+ * The plan to enforce for gating (caps + features). Identical to the
+ * subscribed plan outside the free-launch window; inside it, anything
+ * below SILVER is treated as SILVER.
+ */
+export function effectivePlan(tier: PlanTier, now: Date = new Date()): PlanDefinition {
+  const plan = PLANS[tier];
+  if (!isFreeLaunch(now)) return plan;
+  return plan.rank < PLANS.SILVER.rank ? PLANS.SILVER : plan;
+}
