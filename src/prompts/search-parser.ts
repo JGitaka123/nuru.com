@@ -141,3 +141,124 @@ export async function parseSearchQuery(query: string): Promise<RunResult<SearchF
   const parsed = SearchFiltersSchema.parse(result.content);
   return { ...result, content: parsed };
 }
+
+// MVP neighborhoods + common aliases (Sheng/short forms included).
+const NEIGHBORHOOD_ALIASES: Record<string, string> = {
+  kilimani: "Kilimani",
+  westlands: "Westlands",
+  westy: "Westlands",
+  kileleshwa: "Kileleshwa",
+  kile: "Kileleshwa",
+  lavington: "Lavington",
+  lavi: "Lavington",
+  parklands: "Parklands",
+};
+
+const FEATURE_KEYWORDS: Record<string, string> = {
+  parking: "parking",
+  borehole: "borehole",
+  cctv: "cctv",
+  generator: "backup_generator",
+  backup: "backup_generator",
+  gym: "gym",
+  pool: "swimming_pool",
+  swimming: "swimming_pool",
+  balcony: "balcony",
+  furnished: "furnished",
+  dsq: "dsq",
+  lift: "lift",
+  elevator: "lift",
+  wifi: "wifi",
+  "pet": "pets_allowed",
+  pets: "pets_allowed",
+};
+
+/**
+ * Deterministic fallback parser — used when the Claude API is unreachable
+ * so search degrades to structured filters instead of failing outright.
+ * Handles the common shapes: "2BR Kilimani under 60K with parking".
+ */
+export function heuristicParseSearchQuery(query: string): SearchFilters {
+  const q = query.toLowerCase();
+
+  const neighborhoods = [
+    ...new Set(
+      Object.entries(NEIGHBORHOOD_ALIASES)
+        .filter(([alias]) => new RegExp(`\\b${alias}\\b`, "i").test(q))
+        .map(([, canonical]) => canonical),
+    ),
+  ];
+
+  // "2BR", "2 br", "2 bed(room)s", "three bedroom"
+  let bedrooms: number | null = null;
+  const bedDigit = q.match(/(\d)\s*(?:br\b|bed)/);
+  if (bedDigit) bedrooms = parseInt(bedDigit[1], 10);
+  else {
+    const words: Record<string, number> = { one: 1, two: 2, three: 3, four: 4 };
+    const bedWord = q.match(/\b(one|two|three|four)\s*(?:br\b|bed)/);
+    if (bedWord) bedrooms = words[bedWord[1]];
+  }
+  const isBedsitter = /\bbedsitter\b/.test(q);
+  const isStudio = /\bstudio\b/.test(q);
+
+  // Money: "under 60k", "max 80,000", "around 80k", "60k-80k", "below 100000".
+  // Bare "NNk"/large numbers are treated as a budget ceiling.
+  const toKes = (s: string): number => {
+    const n = parseFloat(s.replace(/,/g, ""));
+    return /k$/i.test(s.trim()) ? Math.round(n * 1000) : Math.round(n);
+  };
+  const money = "((?:\\d[\\d,]*(?:\\.\\d+)?)\\s*k?)";
+  let rentMaxKes: number | null = null;
+  let rentMinKes: number | null = null;
+  const range = q.match(new RegExp(`${money}\\s*(?:-|to)\\s*${money}`, "i"));
+  const capped = q.match(new RegExp(`(?:under|below|max|chini ya|less than|around|about|~)\\s*${money}`, "i"));
+  const bare = q.match(/\b(\d{2,3}k|\d{5,6})\b/i);
+  if (range) {
+    rentMinKes = toKes(range[1]);
+    rentMaxKes = toKes(range[2]);
+  } else if (capped) {
+    rentMaxKes = toKes(capped[1]);
+  } else if (bare) {
+    rentMaxKes = toKes(bare[1]);
+  }
+  // Guard nonsense: rents outside 3K–1M KES are almost certainly misparses.
+  if (rentMaxKes !== null && (rentMaxKes < 3000 || rentMaxKes > 1_000_000)) rentMaxKes = null;
+  if (rentMinKes !== null && (rentMinKes < 3000 || rentMinKes > 1_000_000)) rentMinKes = null;
+
+  const mustHave = [
+    ...new Set(
+      Object.entries(FEATURE_KEYWORDS)
+        .filter(([kw]) => new RegExp(`\\b${kw}`, "i").test(q))
+        .map(([, feature]) => feature),
+    ),
+  ];
+
+  const category = isBedsitter
+    ? ("BEDSITTER" as const)
+    : isStudio
+      ? ("STUDIO" as const)
+      : bedrooms === 1
+        ? ("ONE_BR" as const)
+        : bedrooms === 2
+          ? ("TWO_BR" as const)
+          : bedrooms === 3
+            ? ("THREE_BR" as const)
+            : bedrooms !== null && bedrooms >= 4
+              ? ("FOUR_PLUS_BR" as const)
+              : null;
+
+  return {
+    neighborhoods,
+    bedroomsMin: bedrooms,
+    bedroomsMax: bedrooms,
+    rentMaxKes,
+    rentMinKes,
+    category,
+    mustHave,
+    niceToHave: [],
+    nearLandmarks: [],
+    semanticQuery: query,
+    clarifyingQuestion: null,
+    detectedLanguage: "en",
+  };
+}

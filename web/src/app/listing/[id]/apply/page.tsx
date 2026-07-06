@@ -1,11 +1,11 @@
 "use client";
 
-import { use, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
 
-export default function ApplyPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: listingId } = use(params);
+export default function ApplyPage({ params }: { params: { id: string } }) {
+  const { id: listingId } = params;
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

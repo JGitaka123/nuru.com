@@ -10,8 +10,7 @@
  */
 
 import { prisma } from "../db/client";
-import { logger } from "../lib/logger";
-import { ConflictError, NotFoundError } from "../lib/errors";
+import { NotFoundError } from "../lib/errors";
 import { buildDarajaFromEnv } from "./mpesa";
 import { recordEvent } from "./events";
 import { sendSms } from "./notifications";

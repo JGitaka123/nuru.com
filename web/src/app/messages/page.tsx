@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
-import { photoUrl } from "@/lib/format";
 
 interface ConvRow {
   id: string;

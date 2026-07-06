@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, getToken, type Listing } from "@/lib/api";
@@ -15,8 +15,8 @@ const NEXT_TRANSITIONS: Record<string, string[]> = {
   REMOVED: [],
 };
 
-export default function AgentListingPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function AgentListingPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const router = useRouter();
   const [listing, setListing] = useState<Listing | null>(null);
   const [error, setError] = useState<string | null>(null);

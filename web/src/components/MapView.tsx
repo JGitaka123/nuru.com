@@ -39,13 +39,16 @@ interface MapItem {
   bedrooms: number;
 }
 
+// Leaflet is CDN-loaded; we deliberately avoid the npm package + types.
+type LeafletNS = any;
+
 declare global {
   interface Window {
-    L?: typeof import("leaflet");
+    L?: LeafletNS;
   }
 }
 
-function loadLeaflet(): Promise<typeof import("leaflet")> {
+function loadLeaflet(): Promise<LeafletNS> {
   if (typeof window === "undefined") return Promise.reject(new Error("ssr"));
   if (window.L) return Promise.resolve(window.L);
   return new Promise((resolve, reject) => {

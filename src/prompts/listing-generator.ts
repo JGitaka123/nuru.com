@@ -11,7 +11,7 @@
  */
 
 import { z } from "zod";
-import { run, runVision, type RunResult } from "../ai/router";
+import { runVision, type RunResult } from "../ai/router";
 
 export const ListingDraftSchema = z.object({
   title: z.string().max(80).describe("Concise, factual, no superlatives"),

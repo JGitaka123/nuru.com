@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { api, type Listing } from "@/lib/api";
@@ -12,7 +12,7 @@ const FEATURE_KEYS = [
   "fitted_kitchen", "pet_friendly", "furnished",
 ];
 
-export default function ComparePage() {
+function ComparePageInner() {
   const router = useRouter();
   const params = useSearchParams();
   const ids = useMemo(() => (params.get("ids") ?? "").split(",").filter(Boolean).slice(0, 4), [params]);
@@ -89,5 +89,14 @@ function Row({ label, cells, highlight }: { label: string; cells: Array<string |
         <td key={i} className="border-l border-ink-100 px-3 py-2 capitalize">{c}</td>
       ))}
     </tr>
+  );
+}
+
+// useSearchParams() must render inside a Suspense boundary for static export.
+export default function ComparePage() {
+  return (
+    <Suspense>
+      <ComparePageInner />
+    </Suspense>
   );
 }

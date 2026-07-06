@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
@@ -25,8 +25,8 @@ const STATUS_BADGE: Record<string, string> = {
   WITHDRAWN: "bg-ink-200 text-ink-700",
 };
 
-export default function AgentApplicationsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: listingId } = use(params);
+export default function AgentApplicationsPage({ params }: { params: { id: string } }) {
+  const { id: listingId } = params;
   const router = useRouter();
   const [items, setItems] = useState<AppRow[]>([]);
   const [loading, setLoading] = useState(true);

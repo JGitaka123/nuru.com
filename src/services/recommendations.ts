@@ -31,13 +31,13 @@ export async function similarListings(listingId: string, k = 6): Promise<ResultR
   const limit = Math.max(1, Math.min(k, 20));
   const rows: ResultRow[] = await prisma.$queryRawUnsafe(
     `
-    SELECT l.id, l.title, l.neighborhood, l.rent_kes_cents, l.bedrooms,
-           l.primary_photo_key,
+    SELECT l.id, l.title, l.neighborhood, l."rentKesCents" AS rent_kes_cents, l.bedrooms,
+           l."primaryPhotoKey" AS primary_photo_key,
            1 - (l.embedding <=> source.embedding) AS score
     FROM "Listing" l, (SELECT embedding FROM "Listing" WHERE id = $1) AS source
     WHERE l.id != $1
       AND l.status = 'ACTIVE'
-      AND l.fraud_score < 60
+      AND l."fraudScore" < 60
       AND l.embedding IS NOT NULL
       AND source.embedding IS NOT NULL
     ORDER BY l.embedding <=> source.embedding
@@ -92,13 +92,13 @@ export async function recommendedForUser(userId: string, k = 12): Promise<Result
         FROM "Listing"
         WHERE id = ANY($1::text[]) AND embedding IS NOT NULL
       )
-      SELECT l.id, l.title, l.neighborhood, l.rent_kes_cents, l.bedrooms,
-             l.primary_photo_key,
+      SELECT l.id, l.title, l.neighborhood, l."rentKesCents" AS rent_kes_cents, l.bedrooms,
+             l."primaryPhotoKey" AS primary_photo_key,
              1 - (l.embedding <=> c.v) AS score
       FROM "Listing" l, centroid c
       WHERE l.id != ALL($1::text[])
         AND l.status = 'ACTIVE'
-        AND l.fraud_score < 60
+        AND l."fraudScore" < 60
         AND l.embedding IS NOT NULL
         AND c.v IS NOT NULL
       ORDER BY l.embedding <=> c.v
@@ -118,13 +118,13 @@ async function coldStart(k: number): Promise<ResultRow[]> {
   // Highest AI quality score among recently-published, no fraud.
   return prisma.$queryRawUnsafe<ResultRow[]>(
     `
-    SELECT id, title, neighborhood, rent_kes_cents, bedrooms,
-           primary_photo_key, COALESCE(ai_quality_score, 0.5) AS score
+    SELECT id, title, neighborhood, "rentKesCents" AS rent_kes_cents, bedrooms,
+           "primaryPhotoKey" AS primary_photo_key, COALESCE("aiQualityScore", 0.5) AS score
     FROM "Listing"
     WHERE status = 'ACTIVE'
-      AND fraud_score < 60
-      AND published_at > NOW() - INTERVAL '30 days'
-    ORDER BY published_at DESC
+      AND "fraudScore" < 60
+      AND "publishedAt" > NOW() - INTERVAL '30 days'
+    ORDER BY "publishedAt" DESC
     LIMIT $1
     `,
     k,

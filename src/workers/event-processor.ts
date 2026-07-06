@@ -7,6 +7,7 @@
  */
 
 import { Worker as BullWorker, type Job } from "bullmq";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "../db/client";
 import { logger } from "../lib/logger";
 import { redis, type EventJob } from "./queues";
@@ -17,7 +18,7 @@ interface PendingRow {
   actorRole: string | null;
   targetType: string | null;
   targetId: string | null;
-  properties: object | null;
+  properties: Prisma.InputJsonValue | undefined;
   variantKey: string | null;
   sessionId: string | null;
   ipHash: string | null;
@@ -62,7 +63,7 @@ export function startEventProcessorWorker() {
             actorRole: job.data.actorRole,
             targetType: job.data.targetType,
             targetId: job.data.targetId,
-            properties: job.data.properties ? (job.data.properties as object) : null,
+            properties: job.data.properties ? (job.data.properties as Prisma.InputJsonValue) : undefined,
             variantKey: job.data.variantKey,
             sessionId: job.data.sessionId,
             ipHash: job.data.ipHash,

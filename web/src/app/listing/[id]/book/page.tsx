@@ -1,11 +1,11 @@
 "use client";
 
-import { use, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
 
-export default function BookViewingPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: listingId } = use(params);
+export default function BookViewingPage({ params }: { params: { id: string } }) {
+  const { id: listingId } = params;
   const router = useRouter();
   const [scheduledAt, setScheduledAt] = useState("");
   const [notes, setNotes] = useState("");

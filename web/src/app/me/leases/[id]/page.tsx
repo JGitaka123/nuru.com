@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
@@ -20,8 +20,8 @@ interface Lease {
   escrow?: { id: string; status: string; amountKesCents: number } | null;
 }
 
-export default function LeaseDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function LeaseDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const router = useRouter();
   const [lease, setLease] = useState<Lease | null>(null);
   const [busy, setBusy] = useState(false);

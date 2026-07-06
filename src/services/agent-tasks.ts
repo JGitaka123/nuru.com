@@ -11,7 +11,7 @@
  * this; admin queue surface the throttle reason.
  */
 
-import type { AgentTaskKind, Subscription } from "@prisma/client";
+import type { AgentTaskKind } from "@prisma/client";
 import { prisma } from "../db/client";
 import { logger } from "../lib/logger";
 import { draftClientSuccess } from "../prompts/client-success";
@@ -21,17 +21,6 @@ import { recordEvent } from "./events";
 
 const AUTO_EXECUTE_CONFIDENCE = 0.7;
 const MAX_MESSAGES_PER_WEEK = 2;
-
-interface SubscriptionWithUser {
-  id: string;
-  userId: string;
-  planTier: Subscription["planTier"];
-  status: Subscription["status"];
-  trialEndsAt: Date | null;
-  currentPeriodEnd: Date;
-  failedAttempts: number;
-  cancelAtPeriodEnd: boolean;
-}
 
 /** Run all scanners. Idempotent — won't double-create same task. */
 export async function scanAndCreateTasks(): Promise<{ created: number }> {
@@ -368,7 +357,7 @@ function escapeHtml(s: string): string {
 }
 
 /** Admin manually approves/edits a REVIEW_NEEDED task. */
-export async function approveTask(taskId: string, adminId: string, edits?: { smsBody?: string; emailSubject?: string; emailBody?: string }) {
+export async function approveTask(taskId: string, _adminId: string, edits?: { smsBody?: string; emailSubject?: string; emailBody?: string }) {
   const task = await prisma.agentTask.findUnique({ where: { id: taskId } });
   if (!task) throw new Error("Task not found");
   if (task.status !== "REVIEW_NEEDED") throw new Error(`Task is ${task.status}`);

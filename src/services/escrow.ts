@@ -92,13 +92,13 @@ export async function initiateDeposit(input: InitiateDepositInput) {
 export async function handleStkCallback(cb: StkCallbackPayload) {
   // Try subscription billing first — invoices and escrows share the
   // callback URL but use distinct merchantRequestIds.
-  const { handleSubscriptionStkCallback } = await import("./billing");
+  const { handleSubscriptionStkCallback } = await import("./billing.js");
   const wasSubscription = await handleSubscriptionStkCallback(cb.merchantRequestId, {
     resultCode: cb.resultCode,
     resultDesc: cb.resultDesc,
     amount: cb.amount,
     mpesaReceiptNumber: cb.mpesaReceiptNumber,
-  }).catch((err) => {
+  }).catch((err: unknown) => {
     logger.warn({ err }, "subscription stk callback errored — fallthrough");
     return false;
   });

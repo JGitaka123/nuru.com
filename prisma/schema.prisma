@@ -191,6 +191,7 @@ model Listing {
   applications    Application[]
   leases          Lease[]
   fraudReports    FraudReport[]
+  savedBy         SavedListing[]
 
   @@index([status, neighborhood])
   @@index([rentKesCents])
@@ -529,6 +530,7 @@ model SavedListing {
   id           String   @id @default(cuid())
   userId       String
   listingId    String
+  listing      Listing  @relation(fields: [listingId], references: [id])
   notes        String?  @db.Text
   createdAt    DateTime @default(now())
 

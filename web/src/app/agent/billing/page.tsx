@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
 import { toast } from "@/components/Toast";
@@ -33,7 +33,7 @@ interface Subscription {
   }>;
 }
 
-export default function AgentBillingPage() {
+function AgentBillingPageInner() {
   const router = useRouter();
   const params = useSearchParams();
   const desiredPlan = params.get("plan");
@@ -196,5 +196,14 @@ export default function AgentBillingPage() {
         )}
       </section>
     </div>
+  );
+}
+
+// useSearchParams() must render inside a Suspense boundary for static export.
+export default function AgentBillingPage() {
+  return (
+    <Suspense>
+      <AgentBillingPageInner />
+    </Suspense>
   );
 }

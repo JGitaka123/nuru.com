@@ -44,6 +44,7 @@ export const ClientContextSchema = z.object({
     "UPSELL_OPPORTUNITY",
     "WIN_BACK",
     "RENEWAL_REMINDER",
+    "MANUAL",
   ]),
 });
 
@@ -103,6 +104,7 @@ platform to list properties.
 - WIN_BACK: canceled within 60 days. 30% off promo (placeholder; ops
   toggles real codes). Highlight what's new.
 - RENEWAL_REMINDER: paid period ending. Soft confirmation it'll auto-charge.
+- MANUAL: admin-created check-in. Friendly, generic touch-base using their usage stats.
 
 # Output: STRICT JSON
 {

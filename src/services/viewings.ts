@@ -132,7 +132,7 @@ export async function setViewingStatus(
   to: ViewingStatus,
   rating?: number,
 ) {
-  const v = await loadViewingEither(viewingId, userId, role);
+  await loadViewingEither(viewingId, userId, role);
   if (rating !== undefined && (rating < 1 || rating > 5)) {
     throw new ValidationError("Rating must be 1-5");
   }

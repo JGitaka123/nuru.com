@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
 import { toast } from "@/components/Toast";
@@ -14,8 +14,8 @@ interface Msg {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 
-export default function MessageThreadPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function MessageThreadPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const router = useRouter();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [body, setBody] = useState("");

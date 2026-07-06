@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api, type Listing } from "@/lib/api";
 import { formatKes, formatCategory } from "@/lib/format";
@@ -19,8 +19,8 @@ interface MarketCmp {
   percentDiff?: number;
 }
 
-export default function ListingPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ListingPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const [listing, setListing] = useState<Listing | null>(null);
   const [market, setMarket] = useState<MarketCmp | null>(null);
   const [error, setError] = useState<string | null>(null);

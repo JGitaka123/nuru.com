@@ -11,7 +11,6 @@
  */
 
 import axios from "axios";
-import { logger } from "../lib/logger";
 
 const EMBEDDING_URL = process.env.EMBEDDING_URL ?? "http://localhost:8001";
 const RERANKER_URL = process.env.RERANKER_URL ?? "http://localhost:8002";

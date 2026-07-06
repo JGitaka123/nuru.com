@@ -13,7 +13,7 @@
  */
 
 import { z } from "zod";
-import type { PlanTier, Subscription } from "@prisma/client";
+import type { Subscription } from "@prisma/client";
 import { prisma } from "../db/client";
 import { ConflictError, NotFoundError, ValidationError } from "../lib/errors";
 import { planFor, type PlanFeatures } from "./plans";
