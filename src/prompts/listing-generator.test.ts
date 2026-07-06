@@ -76,12 +76,16 @@ describe("listing-generator", () => {
     },
   ];
 
-  // Skip in CI unless real images are mocked. These run against staging.
-  it.skipIf(!process.env.RUN_REAL_AI_EVALS).each(cases)(
+  // Vision cases fetch photos from the staging fixture bucket
+  // (test-fixtures.nuru.com), which CI can't reach — gate them behind
+  // AI_EVAL_FIXTURES_READY on top of the live-evals flag so the text-only
+  // evals still run in CI.
+  it.skipIf(!process.env.RUN_REAL_AI_EVALS || !process.env.AI_EVAL_FIXTURES_READY).each(cases)(
     "$name",
     async ({ input, expect: assertion }) => {
       const r = await generateListing(input);
       assertion(r.content);
-    }
+    },
+    60_000
   );
 });

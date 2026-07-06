@@ -176,7 +176,12 @@ comment above the call.
       JSON-LD (RealEstateListing) on listing detail, OG metadata on /pricing.
 - [x] **Calendar** — `.ics` download for confirmed viewings.
 - [x] **Compare** — /compare?ids=a,b,c,d side-by-side feature table.
-- [ ] Apply Prisma migrations against a real DB (deployment time)
+- [x] Initial Prisma migration checked in (`prisma/migrations/…_init`),
+      verified with `prisma migrate deploy` against a fresh
+      PostGIS+pgvector database — deployment just runs `pnpm db:deploy`
+- [x] AI evals CI fixed: own workflow with a real `src/prompts/**` paths
+      filter (the old job's changed-files condition could never fire);
+      uses the `ANTHROPIC_API_KEY` repo secret
 - [ ] **Deferred (next iteration)**: dark mode, full Swahili i18n,
       per-listing PostGIS coordinates with agent map-pin UI
 - [ ] Approve "NURU" sender ID with Africa's Talking (3 days lead time)

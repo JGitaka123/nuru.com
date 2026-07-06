@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { heuristicParseSearchQuery, SearchFiltersSchema } from "./search-parser";
+import { heuristicParseSearchQuery, parseSearchQuery, SearchFiltersSchema } from "./search-parser";
 
 describe("heuristicParseSearchQuery", () => {
   it("parses the canonical query shape", () => {
@@ -58,4 +58,33 @@ describe("heuristicParseSearchQuery", () => {
     const f = heuristicParseSearchQuery("2br with parking, borehole and cctv");
     expect(f.mustHave).toEqual(expect.arrayContaining(["parking", "borehole", "cctv"]));
   });
+});
+
+// Live evals — real Claude calls, gated on RUN_REAL_AI_EVALS. Text-only
+// (Haiku, ~$0.001/case), so unlike the vision evals they need no fixture
+// bucket and can run straight from CI.
+describe("parseSearchQuery [eval]", () => {
+  it.skipIf(!process.env.RUN_REAL_AI_EVALS)(
+    "parses the canonical English query",
+    async () => {
+      const r = await parseSearchQuery("2BR Kilimani under 60K with parking");
+      expect(r.content.neighborhoods).toContain("Kilimani");
+      expect(r.content.rentMaxKes).toBe(60000);
+      expect([r.content.bedroomsMin, r.content.bedroomsMax]).toContain(2);
+      expect(r.content.mustHave.join(" ")).toMatch(/parking/i);
+    },
+    60_000,
+  );
+
+  it.skipIf(!process.env.RUN_REAL_AI_EVALS)(
+    "parses Sheng with a pet requirement",
+    async () => {
+      const r = await parseSearchQuery("natafuta keja Kile na pet zangu, around 80k");
+      expect(r.content.neighborhoods).toContain("Kileleshwa");
+      expect(r.content.rentMaxKes).toBeGreaterThanOrEqual(70000);
+      expect(r.content.rentMaxKes).toBeLessThanOrEqual(90000);
+      expect(["sw", "sheng", "mixed"]).toContain(r.content.detectedLanguage);
+    },
+    60_000,
+  );
 });

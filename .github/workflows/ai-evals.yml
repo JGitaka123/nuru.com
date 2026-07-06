@@ -1,0 +1,42 @@
+name: AI evals
+
+# Live-eval gate: runs real Claude calls against the eval suites whenever a
+# prompt (or the router/eval harness) changes. Kept in its own workflow so
+# the paths filter does the gating — a job-level `if` cannot see changed
+# file paths (github.event.pull_request.changed_files is a count).
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/prompts/**"
+      - "src/ai/**"
+      - "scripts/run-evals.ts"
+      - ".github/workflows/ai-evals.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evals:
+    name: AI evals (live)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      JWT_SECRET: ci-secret-must-be-at-least-32-chars-long
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nuru_test
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prisma generate
+      - run: pnpm ai:eval
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AI_EVAL_BUDGET_USD: 5
