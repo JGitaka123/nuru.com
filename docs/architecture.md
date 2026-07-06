@@ -106,7 +106,7 @@
 ## Hosting plan (current)
 
 - **Web + API:** Vercel (web) + Railway/Render (api)
-- **Postgres + Redis:** Supabase (managed Postgres with PostGIS+pgvector) + Upstash Redis
+- **Postgres + Redis:** Neon PostgreSQL with PostGIS/pgvector + Upstash Redis
 - **Workers:** Railway long-running container
 - **GPU inference:** Hetzner GPU instance (~$200-400/mo) or Lambda Labs
 - **R2:** Cloudflare R2

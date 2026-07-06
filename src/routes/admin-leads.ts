@@ -7,6 +7,7 @@
  *   POST   /v1/admin/leads/:id/stage                        force-set stage
  *   GET    /v1/admin/leads/funnel                           counts per stage
  *
+ *   GET    /v1/admin/campaigns                              list campaigns
  *   POST   /v1/admin/campaigns                              create campaign
  *   POST   /v1/admin/campaigns/:id/active                   {active: bool}
  *   POST   /v1/admin/campaigns/:id/enroll                   queue eligible leads
@@ -22,7 +23,7 @@ import {
   LeadInputSchema,
 } from "../services/leads";
 import {
-  createCampaign, setCampaignActive, enrollLeads,
+  createCampaign, listCampaigns, setCampaignActive, enrollLeads,
   listCampaignEmails, campaignMetrics, CampaignInputSchema,
 } from "../services/outreach";
 
@@ -94,6 +95,22 @@ export async function adminLeadRoutes(app: FastifyInstance) {
   );
 
   // ------- Campaigns -------
+  app.get(
+    "/v1/admin/campaigns",
+    { preHandler: requireRole("ADMIN") },
+    async (req, reply) => {
+      const q = z.object({
+        active: z.enum(["true", "false"]).optional(),
+        limit: z.coerce.number().int().min(1).max(200).default(100),
+      }).parse(req.query);
+      const items = await listCampaigns({
+        active: q.active === undefined ? undefined : q.active === "true",
+        limit: q.limit,
+      });
+      return reply.send({ items });
+    },
+  );
+
   app.post(
     "/v1/admin/campaigns",
     { preHandler: requireRole("ADMIN") },

@@ -8,7 +8,6 @@
  * The hash lets us detect duplicate identities without storing raw IDs.
  *
  * Approval flow: PENDING → human review (admin) → VERIFIED or REJECTED.
- * For now we auto-approve agents with valid-looking KRA PINs (admin can revoke).
  */
 
 import { createHash } from "node:crypto";
@@ -93,8 +92,8 @@ export async function submitAgentVerification(
       name: data.fullName,
       nationalIdHash: idHash,
       kraPin: data.kraPin,
-      verificationStatus: "VERIFIED",
-      verifiedAt: new Date(),
+      verificationStatus: "PENDING",
+      verifiedAt: null,
       agentProfile: {
         upsert: {
           create: { agencyName: data.agencyName },
@@ -103,7 +102,7 @@ export async function submitAgentVerification(
       },
     },
   });
-  return { verificationStatus: "VERIFIED" as const };
+  return { verificationStatus: "PENDING" as const };
 }
 
 /** Admin-only: approve or reject a pending verification. */

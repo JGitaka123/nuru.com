@@ -51,10 +51,8 @@ export default function AdminCampaignsPage() {
   async function fetchCampaigns() {
     setLoading(true);
     try {
-      // No list endpoint yet — derive from a couple admin queries; fallback to direct DB later.
-      // For now we just list the empty pattern. Wire up when needed.
-      // TODO: GET /v1/admin/campaigns
-      setItems([]);
+      const r = await api<{ items: Campaign[] }>("/v1/admin/campaigns");
+      setItems(r.items);
     } finally {
       setLoading(false);
     }

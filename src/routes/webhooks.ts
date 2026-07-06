@@ -8,7 +8,8 @@
  *  - Must not leak whether we recognized the request (bots probe these).
  */
 
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
+import { Webhook } from "svix";
 import { DarajaClient } from "../services/mpesa";
 import { handleStkCallback } from "../services/escrow";
 import { handleB2CResult, handleB2CTimeout } from "../services/escrow-result";
@@ -16,6 +17,8 @@ import { parseInboundMessages, verifyWebhookSignature } from "../services/whatsa
 import { applyResendEvent } from "../services/outreach";
 import { suppress } from "../services/email";
 import { logger } from "../lib/logger";
+
+type RawFastifyRequest = FastifyRequest & { rawBody?: string | Buffer };
 
 export async function webhookRoutes(app: FastifyInstance) {
   // STK push result
@@ -61,14 +64,17 @@ export async function webhookRoutes(app: FastifyInstance) {
     return reply.code(403).send();
   });
 
-  // Resend webhooks: open / click / bounce / complaint.
-  // Configure Resend dashboard → Webhooks to POST here. Optional: HMAC
-  // signature verification (RESEND_WEBHOOK_SECRET) — TODO once Resend
-  // adds a stable header format.
-  app.post("/v1/webhooks/resend", async (req, reply) => {
+  // Resend webhooks: open / click / bounce / complaint. Resend signs these
+  // with Svix headers; verification needs the exact raw body.
+  app.post("/v1/webhooks/resend", { config: { rawBody: true } }, async (req, reply) => {
+    const verified = verifyResendWebhook(req);
+    if (!verified) {
+      return reply.code(400).send({ code: "INVALID_SIGNATURE" });
+    }
+
     reply.code(200).send();
     try {
-      const body = req.body as { type?: string; data?: { to?: string[] } };
+      const body = verified as { type?: string; data?: { to?: string[] } };
       // Hard bounces + complaints suppress the recipient permanently.
       if ((body.type === "email.bounced" || body.type === "email.complained") && body.data?.to?.[0]) {
         await suppress(
@@ -77,16 +83,16 @@ export async function webhookRoutes(app: FastifyInstance) {
           `via resend webhook ${body.type}`,
         );
       }
-      await applyResendEvent(req.body);
+      await applyResendEvent(body);
     } catch (e) {
       logger.error({ err: e }, "resend webhook handling failed");
     }
   });
 
   // WhatsApp inbound messages.
-  app.post("/v1/webhooks/whatsapp", async (req, reply) => {
+  app.post("/v1/webhooks/whatsapp", { config: { rawBody: true } }, async (req, reply) => {
     reply.code(200).send();   // ack first
-    const raw = JSON.stringify(req.body);
+    const raw = getRawBody(req);
     const sig = req.headers["x-hub-signature-256"];
     if (!verifyWebhookSignature(raw, typeof sig === "string" ? sig : undefined)) {
       logger.warn("whatsapp webhook signature mismatch");
@@ -103,4 +109,38 @@ export async function webhookRoutes(app: FastifyInstance) {
       logger.error({ err: e }, "whatsapp inbound failed");
     }
   });
+}
+
+function verifyResendWebhook(req: FastifyRequest): unknown | null {
+  const secret = process.env.RESEND_WEBHOOK_SECRET;
+  if (!secret) {
+    logger.error("RESEND_WEBHOOK_SECRET is required for Resend webhooks");
+    return null;
+  }
+
+  const id = req.headers["svix-id"];
+  const timestamp = req.headers["svix-timestamp"];
+  const signature = req.headers["svix-signature"];
+  if (typeof id !== "string" || typeof timestamp !== "string" || typeof signature !== "string") {
+    logger.warn("resend webhook missing svix headers");
+    return null;
+  }
+
+  try {
+    return new Webhook(secret).verify(getRawBody(req), {
+      "svix-id": id,
+      "svix-timestamp": timestamp,
+      "svix-signature": signature,
+    });
+  } catch (err) {
+    logger.warn({ err }, "resend webhook signature mismatch");
+    return null;
+  }
+}
+
+function getRawBody(req: FastifyRequest): string {
+  const raw = (req as RawFastifyRequest).rawBody;
+  if (typeof raw === "string") return raw;
+  if (Buffer.isBuffer(raw)) return raw.toString("utf8");
+  return JSON.stringify(req.body ?? {});
 }

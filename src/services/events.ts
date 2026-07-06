@@ -11,7 +11,6 @@
 
 import { createHash } from "node:crypto";
 import { logger } from "../lib/logger";
-import { eventQueue } from "../workers/queues";
 
 export type EventType =
   | "search"
@@ -60,8 +59,8 @@ export function recordEvent(input: RecordEventInput): void {
   // Truncate properties so a runaway log line can't fill up the queue payload.
   const props = input.properties ? trim(input.properties, 4000) : undefined;
 
-  eventQueue
-    .add(
+  void getEventQueue()
+    .then((eventQueue) => eventQueue.add(
       "ev",
       {
         type: input.type,
@@ -76,11 +75,18 @@ export function recordEvent(input: RecordEventInput): void {
         userAgent: input.userAgent ?? null,
       },
       { removeOnComplete: 1000, removeOnFail: 100 },
-    )
+    ))
     .catch((err) => {
       // Worst case: events lost for this period — never break the request.
       logger.warn({ err }, "event enqueue failed");
-    });
+  });
+}
+
+let eventQueuePromise: Promise<typeof import("../workers/queues.js").eventQueue> | null = null;
+
+function getEventQueue(): Promise<typeof import("../workers/queues.js").eventQueue> {
+  eventQueuePromise ??= import("../workers/queues.js").then(({ eventQueue }) => eventQueue);
+  return eventQueuePromise;
 }
 
 function trim(obj: Record<string, unknown>, maxBytes: number): Record<string, unknown> {

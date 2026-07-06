@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
+import rawBody from "fastify-raw-body";
 import { ZodError } from "zod";
 import { searchRoutes } from "./routes/search";
 import { webhookRoutes } from "./routes/webhooks";
@@ -45,6 +46,13 @@ const app = Fastify({
 app.register(helmet, {
   // Allow inline data URLs for the small set of image responses we send.
   contentSecurityPolicy: false,
+});
+
+app.register(rawBody, {
+  field: "rawBody",
+  global: false,
+  encoding: "utf8",
+  runFirst: true,
 });
 
 // CORS — allow the web app's origin, and credentials for future cookie use.
