@@ -47,6 +47,17 @@ export async function createCampaign(input: z.infer<typeof CampaignInputSchema>)
   });
 }
 
+export async function listCampaigns(opts: { active?: boolean; limit?: number } = {}) {
+  return prisma.outreachCampaign.findMany({
+    where: opts.active === undefined ? {} : { isActive: opts.active },
+    orderBy: { createdAt: "desc" },
+    take: Math.min(opts.limit ?? 100, 200),
+    include: {
+      _count: { select: { emails: true } },
+    },
+  });
+}
+
 export async function setCampaignActive(id: string, active: boolean) {
   const c = await prisma.outreachCampaign.findUnique({ where: { id } });
   if (!c) throw new NotFoundError("Campaign");

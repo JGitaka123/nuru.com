@@ -6,14 +6,14 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "dev:workers": "tsx watch src/workers/index.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "prisma generate && tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "start:workers": "node dist/workers/index.js",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "tsx scripts/seed.ts",
-    "test": "vitest run",
+    "test": "prisma generate && vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:coverage": "vitest run --coverage",
@@ -22,7 +22,7 @@
     "vapid:generate": "tsx scripts/generate-vapid.ts",
     "mpesa:simulate": "tsx scripts/simulate-stk.ts",
     "lint": "eslint src --ext .ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "prisma generate && tsc --noEmit"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.40.0",
@@ -35,17 +35,21 @@
     "axios": "^1.7.0",
     "bullmq": "^5.10.0",
     "fastify": "^4.28.0",
+    "fastify-raw-body": "^4.3.0",
     "ioredis": "5.11.1",
     "pino": "^9.3.0",
     "pino-pretty": "^11.2.0",
+    "svix": "^1.96.1",
     "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/node": "^22.0.0",
     "eslint": "^9.0.0",
     "prisma": "^5.20.0",
     "tsx": "^4.16.0",
     "typescript": "^5.5.0",
+    "typescript-eslint": "^8.62.1",
     "vitest": "^2.0.0"
   },
   "pnpm": {

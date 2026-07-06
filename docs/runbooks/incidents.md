@@ -41,7 +41,7 @@ Symptoms: OTP request returns 500, JWT verify fails for everyone.
 ## SEV2: Listings unreachable
 
 1. Check `/v1/listings/<id>` returns 200.
-2. Check Postgres connection pool isn't exhausted (Supabase dashboard).
+2. Check the Neon connection pool and active connections.
 3. Check pgvector extension is loaded:
    `SELECT * FROM pg_extension WHERE extname='vector';`
 

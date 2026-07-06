@@ -71,7 +71,7 @@ export default function AgentVerifyPage() {
 
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
       <button disabled={busy} className="w-full rounded-lg bg-brand-500 py-3 font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
-        {busy ? "Verifying…" : "Submit"}
+        {busy ? "Submitting..." : "Submit for review"}
       </button>
     </form>
   );

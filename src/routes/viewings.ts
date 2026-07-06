@@ -94,10 +94,20 @@ export async function viewingRoutes(app: FastifyInstance) {
       if (!req.user) throw new ValidationError("No session");
       const v = await prisma.viewing.findUnique({
         where: { id },
-        include: { listing: { select: { title: true, neighborhood: true, addressLine: true, agent: { select: { phoneE164: true, name: true } } } } },
+        include: {
+          listing: {
+            select: {
+              title: true,
+              neighborhood: true,
+              addressLine: true,
+              agentId: true,
+              agent: { select: { phoneE164: true, name: true } },
+            },
+          },
+        },
       });
       if (!v) throw new NotFoundError("Viewing");
-      if (req.user.role !== "ADMIN" && v.tenantId !== req.user.sub && v.listing && (v.listing as any).agent === null) {
+      if (req.user.role !== "ADMIN" && v.tenantId !== req.user.sub && v.listing.agentId !== req.user.sub) {
         throw new ForbiddenError("Not your viewing");
       }
       const dt = (d: Date) => d.toISOString().replace(/[-:]|\.\d{3}/g, "");

@@ -188,24 +188,24 @@ the developer needs to complete before going live. Most items have lead times
 
 ## 8. Database — Postgres 16 with extensions
 
-### Recommended: Supabase
-1. Create a project at <https://supabase.com> (Pro tier $25/mo for the connection
-   pool and the larger storage).
-2. Region: **eu-west-1** or **eu-central-1** (closest to Kenya with low latency).
-3. **Enable extensions** in SQL editor:
+### Recommended: Neon
+1. Create a Neon project at <https://neon.tech>.
+2. Region: **eu-west-1** or **eu-central-1** when available.
+3. **Enable extensions** in the SQL editor:
    ```sql
    CREATE EXTENSION IF NOT EXISTS postgis;
    CREATE EXTENSION IF NOT EXISTS vector;
    CREATE EXTENSION IF NOT EXISTS pg_trgm;
    ```
-4. Copy the connection string. Use the **pooler** URL for the API
-   (`?pgbouncer=true&connection_limit=1`) and the direct URL for migrations.
+4. Copy both Neon connection strings. Use the **pooled** URL for the API and
+   workers, and the **direct** URL for Prisma migrations.
 5. Set env:
    ```
-   DATABASE_URL=postgresql://...?pgbouncer=true&connection_limit=1
-   DIRECT_URL=postgresql://...   # for prisma migrate
+   DATABASE_URL=postgresql://...   # Neon pooled connection string
+   DIRECT_URL=postgresql://...     # Neon direct connection string for Prisma migrate
    ```
-6. Run migrations: `pnpm db:deploy`
+6. Run migrations through the manual GitHub Actions workflow:
+   **Deploy Database** (`.github/workflows/db-deploy.yml`).
 
 ### Alternative: Self-hosted Postgres on Hetzner
 - Same steps, but you manage backups, upgrades, replicas.

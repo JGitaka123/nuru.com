@@ -20,23 +20,14 @@ account/credential setup; this doc covers the recurring deploy steps.
    \q
    ```
 
-2. **Generate the initial migration** (one-time, on the dev workstation
-   that has access to a fresh local DB)
-   ```bash
-   # Spin up a local Postgres with the extensions:
-   docker compose up -d postgres
-   psql "$LOCAL_DATABASE_URL" -f scripts/init-extensions.sql
-   # Generate the migration from prisma/schema.prisma:
-   DATABASE_URL=$LOCAL_DATABASE_URL pnpm prisma migrate dev --name init
-   # Commit prisma/migrations/<timestamp>_init/ and push.
-   ```
+2. **Confirm migrations are present**
+   The initial migration is checked in under `prisma/migrations/`. Do not
+   generate migrations during production deploys.
 
 3. **Run migrations against prod**
-   ```bash
-   DATABASE_URL=$DIRECT_URL pnpm db:deploy
-   ```
-   Always use the **direct** (non-pooled) URL for migrations. The pooled URL
-   doesn't support DDL statements that Prisma needs.
+   Use the manual **Deploy Database** GitHub Actions workflow. It supplies
+   `DATABASE_URL` with the Neon pooled URL and `DIRECT_URL` with the Neon
+   direct URL, then runs `pnpm db:deploy`.
 
 3. **Seed reference data** (one-time)
    ```bash

@@ -14,7 +14,7 @@ let at: ReturnType<typeof AfricasTalking> | null = null;
 
 export async function sendSms(phoneE164: string, message: string) {
   if (!process.env.AT_API_KEY) {
-    logger.warn({ to: "[redacted]", message }, "AT not configured — skipping sms");
+    logger.warn({ to: "[redacted]", messageLength: message.length }, "AT not configured - skipping sms");
     return;
   }
   at ??= AfricasTalking({
