@@ -80,7 +80,7 @@ export default function AdminAgentTasksPage() {
       <p className="text-ink-600">AI-drafted client-success messages awaiting human review (low-confidence) or already executed.</p>
 
       <div className="flex gap-2 text-sm">
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-lg border border-ink-200 bg-white px-3 py-1.5">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-lg border border-ink-200 bg-surface px-3 py-1.5">
           {["REVIEW_NEEDED", "PENDING", "COMPLETED", "CANCELED"].map((s) => <option key={s}>{s}</option>)}
         </select>
       </div>
@@ -92,7 +92,7 @@ export default function AdminAgentTasksPage() {
       ) : (
         <ul className="space-y-3">
           {items.map((t) => (
-            <li key={t.id} className="rounded-xl border border-ink-200 bg-white p-4">
+            <li key={t.id} className="rounded-xl border border-ink-200 bg-surface p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-semibold">{t.kind.replace(/_/g, " ").toLowerCase()}</p>

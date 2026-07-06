@@ -107,6 +107,8 @@ export interface Listing {
   fraudScore: number;
   status: string;
   publishedAt?: string | null;
+  lat?: number | null;
+  lng?: number | null;
   agent?: { id: string; name: string | null; phoneE164: string; verificationStatus: string };
 }
 

@@ -56,7 +56,7 @@ export default function AgentAnalyticsPage() {
           <p className="text-ink-600">How your listings are performing.</p>
         </div>
         <select value={days} onChange={(e) => setDays(Number(e.target.value))}
-          className="rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm">
+          className="rounded-lg border border-ink-200 bg-surface px-3 py-2 text-sm">
           <option value={7}>Last 7 days</option>
           <option value={30}>Last 30 days</option>
           <option value={90}>Last 90 days</option>
@@ -80,7 +80,7 @@ export default function AgentAnalyticsPage() {
           <p className="text-ink-500">No listings yet.</p>
         ) : (
           <div className="overflow-hidden rounded-xl border border-ink-200">
-            <table className="w-full bg-white text-sm">
+            <table className="w-full bg-surface text-sm">
               <thead className="bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
                 <tr>
                   <th className="px-3 py-2">Listing</th>
@@ -134,7 +134,7 @@ export default function AgentAnalyticsPage() {
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-xl bg-white p-4 ring-1 ring-ink-200">
+    <div className="rounded-xl bg-surface p-4 ring-1 ring-ink-200">
       <p className="text-xs uppercase tracking-wide text-ink-500">{label}</p>
       <p className="mt-1 text-2xl font-bold">{value}</p>
     </div>

@@ -109,7 +109,7 @@ function AgentBillingPageInner() {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Billing</h1>
 
-      <section className="rounded-xl bg-white p-6 ring-1 ring-ink-200">
+      <section className="rounded-xl bg-surface p-6 ring-1 ring-ink-200">
         <p className="text-sm text-ink-500">Current plan</p>
         <p className="text-2xl font-bold">{sub.plan.name}</p>
         <p className="text-sm text-ink-500">{sub.status.replace("_", " ").toLowerCase()}</p>
@@ -150,7 +150,7 @@ function AgentBillingPageInner() {
             const isCurrent = sub.planTier === p.id;
             const desired = desiredPlan === p.id;
             return (
-              <article key={p.id} className={`rounded-xl bg-white p-4 ring-1 ${desired ? "ring-2 ring-brand-500" : "ring-ink-200"}`}>
+              <article key={p.id} className={`rounded-xl bg-surface p-4 ring-1 ${desired ? "ring-2 ring-brand-500" : "ring-ink-200"}`}>
                 <h3 className="text-lg font-bold">{p.name}</h3>
                 <p className="text-sm text-ink-500">{p.blurb}</p>
                 <p className="mt-2 text-2xl font-bold">KES {(p.monthlyKesCents / 100).toLocaleString("en-KE")}<span className="text-sm font-normal text-ink-500">/mo</span></p>
@@ -173,7 +173,7 @@ function AgentBillingPageInner() {
         {sub.invoices.length === 0 ? (
           <p className="text-ink-500">No invoices yet.</p>
         ) : (
-          <table className="w-full overflow-hidden rounded-xl bg-white text-sm ring-1 ring-ink-200">
+          <table className="w-full overflow-hidden rounded-xl bg-surface text-sm ring-1 ring-ink-200">
             <thead className="bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
               <tr>
                 <th className="px-3 py-2">Date</th>

@@ -7,6 +7,7 @@ import { formatKes, formatCategory } from "@/lib/format";
 import SaveButton from "@/components/SaveButton";
 import SimilarListings from "@/components/SimilarListings";
 import ImageGallery from "@/components/ImageGallery";
+import MapView from "@/components/MapView";
 import ReviewsBlock from "@/components/ReviewsBlock";
 import ChatStarter from "@/components/ChatStarter";
 import { Skeleton } from "@/components/Skeleton";
@@ -68,6 +69,21 @@ export default function ListingPage({ params }: { params: { id: string } }) {
 
       <ImageGallery keys={allKeys} alt={listing.title} />
 
+      {listing.lat != null && listing.lng != null && (
+        <section>
+          <h2 className="mb-2 text-lg font-semibold">Location</h2>
+          <MapView items={[{
+            id: listing.id,
+            title: listing.title,
+            neighborhood: listing.neighborhood,
+            rent_kes_cents: listing.rentKesCents,
+            bedrooms: listing.bedrooms,
+            lat: listing.lat,
+            lng: listing.lng,
+          }]} />
+        </section>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
         <div className="space-y-4">
           <p className="whitespace-pre-line text-ink-800">{listing.description}</p>
@@ -83,7 +99,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
           )}
         </div>
 
-        <aside className="space-y-4 rounded-xl border border-ink-200 bg-white p-6">
+        <aside className="space-y-4 rounded-xl border border-ink-200 bg-surface p-6">
           <div>
             <p className="text-sm text-ink-500">Rent</p>
             <p className="text-2xl font-bold">{formatKes(listing.rentKesCents)}/mo</p>

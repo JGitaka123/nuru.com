@@ -53,7 +53,7 @@ export default function ApplyPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <form onSubmit={submit} className="mx-auto max-w-xl space-y-4 rounded-xl bg-white p-8 ring-1 ring-ink-200">
+    <form onSubmit={submit} className="mx-auto max-w-xl space-y-4 rounded-xl bg-surface p-8 ring-1 ring-ink-200">
       <h1 className="text-2xl font-bold">Apply to rent</h1>
       <p className="text-sm text-ink-600">
         Your information is private. We use it to help the agent decide. National

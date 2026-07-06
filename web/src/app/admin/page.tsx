@@ -49,7 +49,7 @@ export default function AdminDashboard() {
           ["/admin/ai-queue", "AI feedback"],
           ["/admin/verification", "Verification queue"],
         ].map(([href, label]) => (
-          <Link key={href} href={href} className="rounded-lg border border-ink-300 bg-white px-3 py-1.5 hover:bg-ink-50">
+          <Link key={href} href={href} className="rounded-lg border border-ink-300 bg-surface px-3 py-1.5 hover:bg-ink-50">
             {label}
           </Link>
         ))}
@@ -66,7 +66,7 @@ export default function AdminDashboard() {
 
       <section>
         <h2 className="mb-2 text-lg font-semibold">Funnel — last {funnel.days} days</h2>
-        <ol className="space-y-2 rounded-xl bg-white p-4 ring-1 ring-ink-200">
+        <ol className="space-y-2 rounded-xl bg-surface p-4 ring-1 ring-ink-200">
           {funnel.funnel.map((s, i) => {
             const max = funnel.funnel[0]?.count || 1;
             const width = Math.max(2, (s.count / max) * 100);
@@ -86,7 +86,7 @@ export default function AdminDashboard() {
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-xl bg-white p-4 ring-1 ring-ink-200">
+    <div className="rounded-xl bg-surface p-4 ring-1 ring-ink-200">
       <p className="text-xs uppercase tracking-wide text-ink-500">{label}</p>
       <p className="mt-1 text-2xl font-bold">{value}</p>
     </div>

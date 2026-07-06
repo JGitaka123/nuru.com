@@ -111,7 +111,7 @@ export default function SavedSearchesPage() {
         <p className="mt-1 text-ink-600">Get notified the moment a listing matches your criteria.</p>
       </div>
 
-      <form onSubmit={create} className="grid gap-3 rounded-xl bg-white p-6 ring-1 ring-ink-200 sm:grid-cols-2">
+      <form onSubmit={create} className="grid gap-3 rounded-xl bg-surface p-6 ring-1 ring-ink-200 sm:grid-cols-2">
         <label className="block sm:col-span-2">
           <span className="text-sm text-ink-600">Alert name</span>
           <input
@@ -170,7 +170,7 @@ export default function SavedSearchesPage() {
       ) : (
         <ul className="space-y-3">
           {items.map((s) => (
-            <li key={s.id} className="flex items-start justify-between gap-4 rounded-xl border border-ink-200 bg-white p-4">
+            <li key={s.id} className="flex items-start justify-between gap-4 rounded-xl border border-ink-200 bg-surface p-4">
               <div>
                 <p className="font-semibold">{s.name}</p>
                 <p className="text-sm text-ink-500">

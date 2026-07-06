@@ -91,7 +91,7 @@ export default function AdminAiQueuePage() {
       ) : (
         <ul className="space-y-3">
           {items.map((item) => (
-            <li key={item.id} className="rounded-xl border border-ink-200 bg-white p-4">
+            <li key={item.id} className="rounded-xl border border-ink-200 bg-surface p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-semibold">{item.task}</p>
@@ -119,7 +119,7 @@ export default function AdminAiQueuePage() {
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-xl bg-white p-4 ring-1 ring-ink-200">
+    <div className="rounded-xl bg-surface p-4 ring-1 ring-ink-200">
       <p className="text-xs uppercase tracking-wide text-ink-500">{label}</p>
       <p className="mt-1 text-2xl font-bold">{value}</p>
     </div>

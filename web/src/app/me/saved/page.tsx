@@ -54,7 +54,7 @@ export default function SavedListingsPage() {
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((s) => (
-            <li key={s.id} className="overflow-hidden rounded-xl border border-ink-200 bg-white">
+            <li key={s.id} className="overflow-hidden rounded-xl border border-ink-200 bg-surface">
               <Link href={`/listing/${s.listing.id}`} className="block">
                 {s.listing.primaryPhotoKey && photoUrl(s.listing.primaryPhotoKey) ? (
                   // eslint-disable-next-line @next/next/no-img-element

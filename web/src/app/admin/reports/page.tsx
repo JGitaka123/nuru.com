@@ -81,7 +81,7 @@ export default function AdminReportsPage() {
       ) : (
         <ul className="space-y-3">
           {items.map((report) => (
-            <li key={report.id} className="rounded-xl border border-ink-200 bg-white p-4">
+            <li key={report.id} className="rounded-xl border border-ink-200 bg-surface p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="font-semibold">{report.listing?.title ?? "Listing removed"}</p>

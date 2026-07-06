@@ -122,7 +122,7 @@ export default function AdminCampaignsPage() {
       <p className="text-ink-600">Sonnet-drafted personalized emails to qualified leads. Compliant with Kenya DPA: every email includes one-click unsubscribe.</p>
 
       {showCreate && (
-        <form onSubmit={create} className="grid gap-3 rounded-xl bg-white p-4 ring-1 ring-ink-200">
+        <form onSubmit={create} className="grid gap-3 rounded-xl bg-surface p-4 ring-1 ring-ink-200">
           <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required minLength={3} className="rounded-lg border border-ink-200 px-3 py-2" />
           <textarea placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} className="rounded-lg border border-ink-200 px-3 py-2" />
           <label className="block">
@@ -148,7 +148,7 @@ export default function AdminCampaignsPage() {
       ) : (
         <ul className="space-y-3">
           {items.map((c) => (
-            <li key={c.id} className="rounded-xl border border-ink-200 bg-white p-4">
+            <li key={c.id} className="rounded-xl border border-ink-200 bg-surface p-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="font-semibold">{c.name}</p>

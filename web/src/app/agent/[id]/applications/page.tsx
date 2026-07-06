@@ -70,7 +70,7 @@ export default function AgentApplicationsPage({ params }: { params: { id: string
       ) : (
         <ul className="space-y-3">
           {items.map((a) => (
-            <li key={a.id} className="rounded-xl border border-ink-200 bg-white p-4">
+            <li key={a.id} className="rounded-xl border border-ink-200 bg-surface p-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="font-semibold">

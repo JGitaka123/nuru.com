@@ -14,7 +14,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../lib/auth";
 import {
-  createListing, getListing, updateListing, transitionListing,
+  createListing, getListing, getListingCoords, updateListing, transitionListing,
   listMyListings, listPublicListings, attachPhotos,
   ListingInputSchema, ListingPatchSchema,
 } from "../services/listings";
@@ -77,6 +77,7 @@ export async function listingRoutes(app: FastifyInstance) {
   app.get("/v1/listings/:id", async (req, reply) => {
     const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
     const listing = await getListing(id);
+    const coords = await getListingCoords(id);
     recordEvent({
       type: "listing_view",
       actorId: req.user?.sub ?? null,
@@ -86,7 +87,7 @@ export async function listingRoutes(app: FastifyInstance) {
       ip: req.ip,
       userAgent: req.headers["user-agent"] ?? null,
     });
-    return reply.send(listing);
+    return reply.send({ ...listing, ...coords });
   });
 
   app.patch(

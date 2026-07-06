@@ -182,8 +182,15 @@ comment above the call.
 - [x] AI evals CI fixed: own workflow with a real `src/prompts/**` paths
       filter (the old job's changed-files condition could never fire);
       uses the `ANTHROPIC_API_KEY` repo secret
-- [ ] **Deferred (next iteration)**: dark mode, full Swahili i18n,
-      per-listing PostGIS coordinates with agent map-pin UI
+- [x] **Dark mode** — class-strategy Tailwind dark theme; CSS-variable ink
+      ramp + surface token, no-flash inline script, header toggle
+- [x] **Swahili i18n** — EN/SW dictionary + provider (`web/src/lib/i18n.tsx`),
+      header toggle; covers nav, footer, home, search, login. Agent/admin
+      tooling stays English for now.
+- [x] **Per-listing coordinates** — lat/lng accepted on listing create/update
+      (PostGIS via raw SQL, GiST index migration), returned from listing
+      detail + search; agent map-pin picker on /agent/new; real pins in
+      MapView and a Location map on listing detail
 - [ ] Approve "NURU" sender ID with Africa's Talking (3 days lead time)
 - [ ] Approve Daraja B2C production access (~3 weeks lead time)
 - [ ] Verify Meta Business + WhatsApp display name (~1-2 weeks lead time)

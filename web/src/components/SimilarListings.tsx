@@ -32,7 +32,7 @@ export default function SimilarListings({ listingId }: { listingId: string }) {
       <h2 className="text-xl font-semibold">Similar listings</h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((i) => (
-          <Link key={i.id} href={`/listing/${i.id}`} className="group overflow-hidden rounded-xl border border-ink-200 bg-white hover:shadow-md">
+          <Link key={i.id} href={`/listing/${i.id}`} className="group overflow-hidden rounded-xl border border-ink-200 bg-surface hover:shadow-md">
             {i.primary_photo_key && photoUrl(i.primary_photo_key) ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={photoUrl(i.primary_photo_key)!} alt="" className="h-32 w-full object-cover" />

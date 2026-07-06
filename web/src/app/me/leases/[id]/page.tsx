@@ -92,7 +92,7 @@ export default function LeaseDetailPage({ params }: { params: { id: string } }) 
         <p className="text-ink-600">Lease — {lease.status.replace("_", " ").toLowerCase()}</p>
       </header>
 
-      <section className="grid gap-4 rounded-xl bg-white p-6 ring-1 ring-ink-200 sm:grid-cols-2">
+      <section className="grid gap-4 rounded-xl bg-surface p-6 ring-1 ring-ink-200 sm:grid-cols-2">
         <div>
           <p className="text-sm text-ink-500">Rent</p>
           <p className="font-semibold">{formatKes(lease.rentKesCents)}/mo</p>
@@ -111,7 +111,7 @@ export default function LeaseDetailPage({ params }: { params: { id: string } }) 
         </div>
       </section>
 
-      <section className="space-y-3 rounded-xl bg-white p-6 ring-1 ring-ink-200">
+      <section className="space-y-3 rounded-xl bg-surface p-6 ring-1 ring-ink-200">
         <h2 className="font-semibold">Next steps</h2>
         {!lease.signedTenantAt && (
           <button onClick={sign} disabled={busy}

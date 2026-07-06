@@ -51,7 +51,7 @@ export default function AgentInboxPage() {
       ) : (
         <ul className="space-y-3">
           {items.map((i) => (
-            <li key={i.id} className={`flex gap-4 rounded-xl border bg-white p-4 ${i.respondedAt ? "border-ink-200" : "border-brand-300 bg-brand-50/40"}`}>
+            <li key={i.id} className={`flex gap-4 rounded-xl border bg-surface p-4 ${i.respondedAt ? "border-ink-200" : "border-brand-300 bg-brand-50/40"}`}>
               <div className="h-16 w-16 flex-none overflow-hidden rounded-lg bg-ink-100">
                 {i.listing.primaryPhotoKey && photoUrl(i.listing.primaryPhotoKey) ? (
                   // eslint-disable-next-line @next/next/no-img-element

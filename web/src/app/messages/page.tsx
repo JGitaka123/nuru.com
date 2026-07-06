@@ -37,7 +37,7 @@ export default function MessagesPage() {
       {items.length === 0 ? (
         <p className="text-ink-500">No conversations yet. Open a listing and tap "Chat with agent".</p>
       ) : (
-        <ul className="divide-y divide-ink-100 overflow-hidden rounded-xl bg-white ring-1 ring-ink-200">
+        <ul className="divide-y divide-ink-100 overflow-hidden rounded-xl bg-surface ring-1 ring-ink-200">
           {items.map((c) => {
             const last = c.messages[0];
             return (

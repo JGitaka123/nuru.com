@@ -65,7 +65,7 @@ export default async function PricingPage() {
           return (
             <article
               key={p.id}
-              className={`flex flex-col rounded-2xl bg-white p-6 ring-1 ${featured ? "ring-2 ring-brand-500" : "ring-ink-200"}`}
+              className={`flex flex-col rounded-2xl bg-surface p-6 ring-1 ${featured ? "ring-2 ring-brand-500" : "ring-ink-200"}`}
             >
               {featured && <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-600">Most popular</p>}
               <h2 className="text-xl font-bold">{p.name}</h2>
@@ -110,19 +110,19 @@ export default async function PricingPage() {
 
       <section className="mx-auto max-w-3xl space-y-3 text-sm text-ink-700">
         <h2 className="text-xl font-semibold">Frequently asked</h2>
-        <details className="rounded-lg bg-white p-4 ring-1 ring-ink-200">
+        <details className="rounded-lg bg-surface p-4 ring-1 ring-ink-200">
           <summary className="cursor-pointer font-medium">What happens after my trial ends?</summary>
           <p className="mt-2">Your listings pause until you pick a plan. Re-activating is one click — listings come right back.</p>
         </details>
-        <details className="rounded-lg bg-white p-4 ring-1 ring-ink-200">
+        <details className="rounded-lg bg-surface p-4 ring-1 ring-ink-200">
           <summary className="cursor-pointer font-medium">How do I pay?</summary>
           <p className="mt-2">M-Pesa STK push to your phone each month. We send a reminder SMS the day before each charge.</p>
         </details>
-        <details className="rounded-lg bg-white p-4 ring-1 ring-ink-200">
+        <details className="rounded-lg bg-surface p-4 ring-1 ring-ink-200">
           <summary className="cursor-pointer font-medium">Can I change plans later?</summary>
           <p className="mt-2">Yes — upgrade or downgrade any time. Changes take effect at the next billing cycle, prorated.</p>
         </details>
-        <details className="rounded-lg bg-white p-4 ring-1 ring-ink-200">
+        <details className="rounded-lg bg-surface p-4 ring-1 ring-ink-200">
           <summary className="cursor-pointer font-medium">Is there a long-term contract?</summary>
           <p className="mt-2">No. Monthly billing, cancel any time before the next charge.</p>
         </details>

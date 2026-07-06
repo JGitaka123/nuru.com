@@ -30,7 +30,7 @@ export default function AgentVerifyPage() {
   }
 
   return (
-    <form onSubmit={submit} className="mx-auto max-w-md space-y-4 rounded-xl bg-white p-8 ring-1 ring-ink-200">
+    <form onSubmit={submit} className="mx-auto max-w-md space-y-4 rounded-xl bg-surface p-8 ring-1 ring-ink-200">
       <h1 className="text-2xl font-bold">Verify your agent account</h1>
       <p className="text-sm text-ink-600">We&apos;ll match your KRA PIN against the registry. Your ID number is hashed; we never store the raw value.</p>
 

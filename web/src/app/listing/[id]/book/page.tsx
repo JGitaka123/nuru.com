@@ -38,7 +38,7 @@ export default function BookViewingPage({ params }: { params: { id: string } }) 
   const min = new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16);
 
   return (
-    <form onSubmit={submit} className="mx-auto max-w-md space-y-4 rounded-xl bg-white p-8 ring-1 ring-ink-200">
+    <form onSubmit={submit} className="mx-auto max-w-md space-y-4 rounded-xl bg-surface p-8 ring-1 ring-ink-200">
       <h1 className="text-2xl font-bold">Book a viewing</h1>
       <p className="text-sm text-ink-600">The agent will confirm your slot. You&apos;ll get an SMS reminder the day before.</p>
 

@@ -48,7 +48,7 @@ export default function ReferralsPage() {
         </p>
       </div>
 
-      <section className="rounded-xl bg-white p-6 ring-1 ring-ink-200">
+      <section className="rounded-xl bg-surface p-6 ring-1 ring-ink-200">
         <p className="text-sm text-ink-500">Your code</p>
         <div className="mt-1 flex items-center gap-3">
           <span className="text-3xl font-bold tracking-wider">{data.code.code}</span>
@@ -65,7 +65,7 @@ export default function ReferralsPage() {
           <h2 className="text-xl font-semibold">Redemptions</h2>
           <ul className="mt-2 space-y-2">
             {data.redemptions.map((r) => (
-              <li key={r.id} className="flex items-center justify-between rounded-lg bg-white p-3 text-sm ring-1 ring-ink-200">
+              <li key={r.id} className="flex items-center justify-between rounded-lg bg-surface p-3 text-sm ring-1 ring-ink-200">
                 <span>{new Date(r.redeemedAt).toLocaleString("en-KE")}</span>
                 <span className={r.rewardPaidAt ? "text-green-700" : "text-ink-500"}>
                   {r.rewardPaidAt ? "Reward credited" : "Pending first paid invoice"}
