@@ -79,7 +79,7 @@ async function sendAlert(
   const rentKes = Math.round(listing.rentKesCents / 100).toLocaleString("en-KE");
   const linkPath = `/listing/${listing.id}`;
 
-  if (ss.alertSms) {
+  if (ss.alertSms && user.phoneE164) {
     await sendSms(
       user.phoneE164,
       `Nuru: New match for "${ss.name}" — ${listing.title} in ${listing.neighborhood}, KES ${rentKes}/mo. nuru.com${linkPath}`,

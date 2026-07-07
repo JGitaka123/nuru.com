@@ -109,14 +109,15 @@ export interface Listing {
   publishedAt?: string | null;
   lat?: number | null;
   lng?: number | null;
-  agent?: { id: string; name: string | null; phoneE164: string; verificationStatus: string };
+  agent?: { id: string; name: string | null; phoneE164: string | null; email?: string | null; verificationStatus: string };
 }
 
 export interface SessionUser {
   id: string;
   role: "TENANT" | "AGENT" | "LANDLORD" | "ADMIN";
   name: string | null;
-  phoneE164: string;
+  phoneE164: string | null;
+  email: string | null;
   preferredLang?: string;
   verificationStatus?: string;
 }

@@ -37,8 +37,17 @@ export function startViewingReminderWorker() {
       const msg = `Nuru reminder: viewing for "${v.listing.title}" tomorrow at ${eatTime} EAT (${eatDate}). Reply CANCEL if you can't make it.`;
 
       if (channel === "sms") {
-        await sendSms(v.tenant.phoneE164, msg);
-        await sendSms(v.listing.agent.phoneE164, msg);
+        let sent = 0;
+        if (v.tenant.phoneE164) {
+          await sendSms(v.tenant.phoneE164, msg);
+          sent++;
+        }
+        if (v.listing.agent.phoneE164) {
+          await sendSms(v.listing.agent.phoneE164, msg);
+          sent++;
+        }
+        logger.info({ viewingId, sent }, "reminder processed");
+        return;
       }
       logger.info({ viewingId }, "reminder sent");
     },

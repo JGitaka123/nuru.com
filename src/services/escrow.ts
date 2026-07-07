@@ -145,16 +145,20 @@ export async function handleStkCallback(cb: StkCallbackPayload) {
     ]);
 
     // Fire-and-forget notifications.
-    sendSms(
-      escrow.lease.tenant.phoneE164,
-      `Nuru: Your deposit of KES ${cb.amount} is held safely. ` +
-        `It will be released to the landlord after you confirm move-in.`
-    ).catch((e) => logger.error(e, "tenant sms failed"));
-    sendSms(
-      escrow.lease.landlord.phoneE164,
-      `Nuru: Deposit received and held in escrow for "${escrow.lease.listing.title}". ` +
-        `It will be released after the tenant confirms move-in.`
-    ).catch((e) => logger.error(e, "landlord sms failed"));
+    if (escrow.lease.tenant.phoneE164) {
+      sendSms(
+        escrow.lease.tenant.phoneE164,
+        `Nuru: Your deposit of KES ${cb.amount} is held safely. ` +
+          `It will be released to the landlord after you confirm move-in.`
+      ).catch((e) => logger.error(e, "tenant sms failed"));
+    }
+    if (escrow.lease.landlord.phoneE164) {
+      sendSms(
+        escrow.lease.landlord.phoneE164,
+        `Nuru: Deposit received and held in escrow for "${escrow.lease.listing.title}". ` +
+          `It will be released after the tenant confirms move-in.`
+      ).catch((e) => logger.error(e, "landlord sms failed"));
+    }
 
     recordEvent({
       type: "escrow_held",

@@ -22,6 +22,7 @@ describe.skipIf(skip)("auth integration", () => {
   beforeAll(async () => {
     process.env.JWT_SECRET ??= "integration-secret-must-be-at-least-32-chars";
     process.env.AT_API_KEY = "";   // force devCode path
+    process.env.RESEND_API_KEY = ""; // force devCode path
     prisma = new PrismaClient();
     app = Fastify();
     await app.register(authRoutes);
@@ -34,8 +35,22 @@ describe.skipIf(skip)("auth integration", () => {
   });
 
   beforeEach(async () => {
-    await prisma.otpAttempt.deleteMany({ where: { phoneE164: { startsWith: "+25470" } } });
-    await prisma.user.deleteMany({ where: { phoneE164: { startsWith: "+25470" } } });
+    await prisma.otpAttempt.deleteMany({
+      where: {
+        OR: [
+          { phoneE164: { startsWith: "+25470" } },
+          { email: { endsWith: "@example.com" } },
+        ],
+      },
+    });
+    await prisma.user.deleteMany({
+      where: {
+        OR: [
+          { phoneE164: { startsWith: "+25470" } },
+          { email: { endsWith: "@example.com" } },
+        ],
+      },
+    });
   });
 
   it("issues, verifies, and creates a session", async () => {
@@ -60,6 +75,46 @@ describe.skipIf(skip)("auth integration", () => {
     expect(verifyJson.token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
     expect(verifyJson.isNewUser).toBe(true);
     expect(verifyJson.user.id).toBeTruthy();
+  });
+
+  it("issues email OTP, creates an email user, and saves profile details", async () => {
+    const email = "Tenant.Email@example.com";
+
+    const reqRes = await app.inject({
+      method: "POST",
+      url: "/v1/auth/email/request",
+      payload: { email },
+    });
+    expect(reqRes.statusCode).toBe(200);
+    const reqJson = reqRes.json() as { devCode?: string };
+    expect(reqJson.devCode).toMatch(/^\d{6}$/);
+
+    const verifyRes = await app.inject({
+      method: "POST",
+      url: "/v1/auth/email/verify",
+      payload: { email, code: reqJson.devCode },
+    });
+    expect(verifyRes.statusCode).toBe(200);
+    const verifyJson = verifyRes.json() as {
+      token: string;
+      user: { id: string; email: string; phoneE164: string | null };
+      isNewUser: boolean;
+    };
+    expect(verifyJson.isNewUser).toBe(true);
+    expect(verifyJson.user.email).toBe("tenant.email@example.com");
+    expect(verifyJson.user.phoneE164).toBeNull();
+
+    const profileRes = await app.inject({
+      method: "PATCH",
+      url: "/v1/auth/me",
+      headers: { authorization: `Bearer ${verifyJson.token}` },
+      payload: { name: "Tenant Email", role: "TENANT" },
+    });
+    expect(profileRes.statusCode).toBe(200);
+    expect(profileRes.json()).toMatchObject({
+      token: expect.stringMatching(/^[\w-]+\.[\w-]+\.[\w-]+$/),
+      user: { name: "Tenant Email", email: "tenant.email@example.com" },
+    });
   });
 
   it("rejects an invalid code and locks after 5 attempts", async () => {

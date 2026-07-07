@@ -44,7 +44,9 @@ model PushSubscription {
 // Old rows are pruned by a worker (or we add a TTL index on createdAt).
 model OtpAttempt {
   id           String   @id @default(cuid())
-  phoneE164    String
+  channel      String   @default("phone") // phone | email
+  phoneE164    String?
+  email        String?
   codeHash     String   // bcrypt-style hash of the 6-digit code
   attempts     Int      @default(0)  // verify attempts; lock at 5
   consumedAt   DateTime?
@@ -52,6 +54,8 @@ model OtpAttempt {
   createdAt    DateTime @default(now())
 
   @@index([phoneE164, createdAt])
+  @@index([email, createdAt])
+  @@index([channel, createdAt])
 }
 
 // =====================================================
@@ -74,7 +78,7 @@ enum VerificationStatus {
 
 model User {
   id              String   @id @default(cuid())
-  phoneE164       String   @unique  // +254712345678
+  phoneE164       String?  @unique  // +254712345678
   email           String?  @unique
   name            String?
   role            UserRole @default(TENANT)
