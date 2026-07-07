@@ -9,12 +9,12 @@ export default function PrivacyPage() {
   return (
     <article className="prose mx-auto max-w-3xl space-y-4 rounded-xl bg-surface p-8 ring-1 ring-ink-200">
       <h1 className="text-3xl font-bold">Privacy Policy</h1>
-      <p className="text-sm text-ink-500">Last updated: TBD at launch</p>
+      <p className="text-sm text-ink-500">Last updated: July 2026</p>
 
       <p>
-        Nuru.com (&quot;we&quot;, &quot;us&quot;) is registered as a data controller with
-        Kenya&apos;s Office of the Data Protection Commissioner (ODPC reference
-        number: <strong>TBD at launch</strong>). This policy explains what
+        Nuru.com (&quot;we&quot;, &quot;us&quot;) is in the process of registering as a data
+        controller with Kenya&apos;s Office of the Data Protection Commissioner
+        (ODPC reference number: <strong>pending registration</strong>). This policy explains what
         personal data we collect, why we collect it, and your rights under
         the Data Protection Act, 2019.
       </p>

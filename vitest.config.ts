@@ -12,7 +12,8 @@ export default defineConfig({
     environment: "node",
     globals: false,
     testTimeout: 10_000,
-    pool: "threads",
+    pool: "forks",
+    poolOptions: { forks: { singleFork: true } },
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],

@@ -16,6 +16,7 @@ import { handleB2CResult, handleB2CTimeout } from "../services/escrow-result";
 import { parseInboundMessages, verifyWebhookSignature } from "../services/whatsapp";
 import { applyResendEvent } from "../services/outreach";
 import { suppress } from "../services/email";
+import { whatsappReplyQueue } from "../workers/queues";
 import { logger } from "../lib/logger";
 
 type RawFastifyRequest = FastifyRequest & { rawBody?: string | Buffer };
@@ -101,8 +102,16 @@ export async function webhookRoutes(app: FastifyInstance) {
     try {
       const messages = parseInboundMessages(req.body);
       for (const m of messages) {
-        // TODO: enqueue draftWhatsAppReply via a new BullMQ queue once the
-        // Meta account is approved. For now we just log.
+        await whatsappReplyQueue.add(
+          "inbound",
+          {
+            fromE164: m.fromE164,
+            text: m.text,
+            messageId: m.messageId,
+            timestamp: m.timestamp.toISOString(),
+          },
+          { jobId: `wa:${m.messageId}` },
+        );
         logger.info({ from: "[redacted]", textLen: m.text.length }, "whatsapp inbound");
       }
     } catch (e) {

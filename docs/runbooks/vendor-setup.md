@@ -323,8 +323,8 @@ you rotate.)
   with the **ODPC** (Office of the Data Protection Commissioner):
   <https://www.odpc.go.ke>. Approval takes ~30 days.
 - Display the **registration number** in the website footer once issued.
-- Update the privacy policy at `web/src/app/privacy/page.tsx` (TODO) with
-  your ODPC reference.
+- Replace the pending ODPC reference in `web/src/app/privacy/page.tsx` once
+  the registration number is issued.
 
 ---
 

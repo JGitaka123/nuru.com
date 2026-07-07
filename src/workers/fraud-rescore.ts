@@ -3,7 +3,7 @@
  *
  * Triggered by:
  *   - User reports a listing → enqueued from src/services/fraud-reports.ts
- *   - Nightly cron (TODO: add schedule) → null listingId means "all stale"
+ *   - Nightly cron from src/workers/index.ts → null listingId means "all stale"
  *
  * For batch rescores, prefer the Anthropic Batch API (50% off) — see
  * src/ai/router.ts:RunOptions.batch. We don't yet wire the async polling
@@ -16,6 +16,7 @@ import { Worker as BullWorker } from "bullmq";
 import { prisma } from "../db/client";
 import { logger } from "../lib/logger";
 import { scoreFraud } from "../prompts/fraud-scorer";
+import { priceComparison } from "../services/market-intel";
 import { redis, type FraudRescoreJob } from "./queues";
 
 export function startFraudRescoreWorker() {
@@ -55,13 +56,19 @@ async function rescoreOne(listingId: string) {
     prisma.viewing.findMany({ where: { listingId } }),
     prisma.inquiry.count({ where: { listingId } }),
   ]);
+  const market = await priceComparison({
+    neighborhood: listing.neighborhood,
+    category: listing.category,
+    bedrooms: listing.bedrooms,
+    rentKesCents: listing.rentKesCents,
+  }).catch(() => ({ hasBand: false as const }));
 
   const fraud = await scoreFraud({
     listingId,
     agentTrustScore: listing.agent.agentProfile?.trustScore ?? 50,
     agentAccountAgeDays: Math.floor((Date.now() - listing.agent.createdAt.getTime()) / 86_400_000),
     agentVerified: listing.agent.verificationStatus === "VERIFIED",
-    rentVsMarketMedianRatio: 1, // TODO: compute from RentComp
+    rentVsMarketMedianRatio: market.hasBand ? market.ratio : 1,
     photoCount: listing.photoKeys.length,
     hasWatermark: listing.fraudFlags.includes("watermark_detected"),
     reverseImageMatches: 0,

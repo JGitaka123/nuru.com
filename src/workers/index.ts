@@ -9,6 +9,7 @@ import { logger } from "../lib/logger";
 import { startListingEnrichmentWorker } from "./listing-enrichment";
 import { startEscrowReleaseWorker } from "./escrow-release";
 import { startViewingReminderWorker } from "./viewing-reminders";
+import { startWhatsAppReplyWorker } from "./whatsapp-reply";
 import { startFraudRescoreWorker } from "./fraud-rescore";
 import { startEventProcessorWorker } from "./event-processor";
 import { startMarketIntelWorker } from "./market-intel";
@@ -16,7 +17,7 @@ import { startOutreachSenderWorker } from "./outreach-sender";
 import { startSearchAlertWorker } from "./search-alert";
 import { startBillingWorker } from "./billing";
 import { startAgentTasksWorker } from "./agent-tasks";
-import { marketIntelQueue, billingQueue, agentTasksQueue } from "./queues";
+import { marketIntelQueue, fraudRescoreQueue, billingQueue, agentTasksQueue } from "./queues";
 
 const FILTER = (process.env.WORKER_FILTER ?? "").split(",").map((s) => s.trim()).filter(Boolean);
 const enabled = (name: string) => FILTER.length === 0 || FILTER.includes(name);
@@ -36,9 +37,18 @@ async function main() {
     const w = startViewingReminderWorker();
     workers.push({ name: "viewing-reminders", close: () => w.close() });
   }
+  if (enabled("whatsapp-replies")) {
+    const w = startWhatsAppReplyWorker();
+    workers.push({ name: "whatsapp-replies", close: () => w.close() });
+  }
   if (enabled("fraud-rescore")) {
     const w = startFraudRescoreWorker();
     workers.push({ name: "fraud-rescore", close: () => w.close() });
+    await fraudRescoreQueue.add(
+      "nightly",
+      { listingId: null },
+      { repeat: { pattern: "0 4 * * *" }, jobId: "fraud-rescore:nightly" },
+    ).catch((e) => logger.warn({ err: e }, "could not schedule fraud-rescore"));
   }
   if (enabled("events")) {
     const w = startEventProcessorWorker();

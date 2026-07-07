@@ -82,7 +82,7 @@ export async function getListingCoords(listingId: string): Promise<ListingCoords
   return rows[0] ?? { lat: null, lng: null };
 }
 
-export async function getListing(id: string) {
+export async function getListing(id: string, viewer?: { sub: string; role: UserRole }) {
   const listing = await prisma.listing.findUnique({
     where: { id },
     include: {
@@ -90,6 +90,10 @@ export async function getListing(id: string) {
     },
   });
   if (!listing) throw new NotFoundError("Listing");
+  const canViewPrivate = viewer && (viewer.role === "ADMIN" || listing.agentId === viewer.sub);
+  if (!canViewPrivate && (listing.status !== "ACTIVE" || listing.fraudScore >= 60)) {
+    throw new NotFoundError("Listing");
+  }
   return listing;
 }
 

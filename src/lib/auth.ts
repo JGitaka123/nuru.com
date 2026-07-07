@@ -91,6 +91,16 @@ export async function requireAuth(req: FastifyRequest, _reply: FastifyReply) {
   req.user = verifyToken(header.slice(7));
 }
 
+/**
+ * preHandler for public routes that can personalize or unlock owner/admin
+ * previews when a bearer token is present.
+ */
+export async function optionalAuth(req: FastifyRequest, _reply: FastifyReply) {
+  const header = req.headers.authorization;
+  if (!header?.startsWith("Bearer ")) return;
+  req.user = verifyToken(header.slice(7));
+}
+
 /** preHandler that also checks role. */
 export function requireRole(...roles: UserRole[]) {
   return async (req: FastifyRequest, reply: FastifyReply) => {
