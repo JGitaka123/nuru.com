@@ -12,7 +12,7 @@
 
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { requireAuth, requireRole } from "../lib/auth";
+import { optionalAuth, requireAuth, requireRole } from "../lib/auth";
 import {
   createListing, getListing, getListingCoords, updateListing, transitionListing,
   listMyListings, listPublicListings, attachPhotos,
@@ -74,9 +74,9 @@ export async function listingRoutes(app: FastifyInstance) {
     return reply.send(result);
   });
 
-  app.get("/v1/listings/:id", async (req, reply) => {
+  app.get("/v1/listings/:id", { preHandler: optionalAuth }, async (req, reply) => {
     const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
-    const listing = await getListing(id);
+    const listing = await getListing(id, req.user);
     const coords = await getListingCoords(id);
     recordEvent({
       type: "listing_view",

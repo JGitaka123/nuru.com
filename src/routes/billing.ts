@@ -44,7 +44,8 @@ export async function billingRoutes(app: FastifyInstance) {
     { preHandler: requireRole("AGENT", "LANDLORD", "ADMIN") },
     async (req, reply) => {
       const input = ChangePlanSchema.parse(req.body);
-      const sub = await changePlan(req.user!.sub, input);
+      await changePlan(req.user!.sub, input);
+      const sub = await getCurrent(req.user!.sub);
       return reply.send(sub);
     },
   );
@@ -53,7 +54,8 @@ export async function billingRoutes(app: FastifyInstance) {
     "/v1/billing/cancel",
     { preHandler: requireAuth },
     async (req, reply) => {
-      const sub = await cancelAtPeriodEnd(req.user!.sub);
+      await cancelAtPeriodEnd(req.user!.sub);
+      const sub = await getCurrent(req.user!.sub);
       return reply.send(sub);
     },
   );
@@ -62,7 +64,8 @@ export async function billingRoutes(app: FastifyInstance) {
     "/v1/billing/resume",
     { preHandler: requireAuth },
     async (req, reply) => {
-      const sub = await resumeSubscription(req.user!.sub);
+      await resumeSubscription(req.user!.sub);
+      const sub = await getCurrent(req.user!.sub);
       return reply.send(sub);
     },
   );

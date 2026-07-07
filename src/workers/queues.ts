@@ -32,6 +32,14 @@ export interface ViewingReminderJob {
 }
 export const viewingReminderQueue = new Queue<ViewingReminderJob>("viewing-reminders", baseOpts);
 
+export interface WhatsAppReplyJob {
+  fromE164: string;
+  text: string;
+  messageId: string;
+  timestamp: string;
+}
+export const whatsappReplyQueue = new Queue<WhatsAppReplyJob>("whatsapp-replies", baseOpts);
+
 export interface FraudRescoreJob {
   /** If null, rescore everything that hasn't been rescored in 24h. */
   listingId: string | null;

@@ -97,6 +97,39 @@ export async function changePlan(userId: string, input: z.infer<typeof ChangePla
   }
 
   const plan = planFor(planTier);
+  const now = new Date();
+  const launchEnd = isFreeLaunch(now) ? freeLaunchUntil() : null;
+  if (launchEnd) {
+    if (promoCode) {
+      throw new ValidationError("Promo codes can be applied after launch billing starts");
+    }
+
+    const updated = await prisma.subscription.update({
+      where: { userId },
+      data: {
+        planTier,
+        status: "ACTIVE",
+        currentPeriodStart: now,
+        currentPeriodEnd: launchEnd,
+        cancelAtPeriodEnd: false,
+        canceledAt: null,
+        nextChargeAt: launchEnd,
+        promoCodeId: null,
+        failedAttempts: 0,
+      },
+    });
+
+    recordEvent({
+      type: "ai_call",
+      actorId: userId,
+      targetType: "subscription",
+      targetId: updated.id,
+      properties: { kind: "plan_changed_free_launch", to: planTier, amount: 0 },
+    });
+    logger.info({ userId, planTier, launchEnd }, "plan selected during free launch");
+    return updated;
+  }
+
   let amount = plan.monthlyKesCents;
 
   let promo = null;
@@ -117,7 +150,6 @@ export async function changePlan(userId: string, input: z.infer<typeof ChangePla
     }
   }
 
-  const now = new Date();
   const periodEnd = new Date(now);
   // freeMonths skip the first charge entirely.
   const freeMonths = promo?.freeMonths ?? 0;

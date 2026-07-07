@@ -16,6 +16,7 @@ export const ReplyContextSchema = z.object({
   tenantMessage: z.string(),
   detectedLanguage: z.enum(["en", "sw", "sheng", "mixed"]).optional(),
   listing: z.object({
+    id: z.string(),
     title: z.string(),
     neighborhood: z.string(),
     rentKes: z.number(),
@@ -74,6 +75,7 @@ export async function draftWhatsAppReply(ctx: ReplyContext): Promise<RunResult<R
   const safe = ReplyContextSchema.parse(ctx);
   const userText = `
 Listing: ${safe.listing.title} (${safe.listing.bedrooms}BR, ${safe.listing.neighborhood}, KES ${safe.listing.rentKes.toLocaleString()}/mo)
+Listing link: nuru.com/listing/${safe.listing.id}
 Features: ${safe.listing.features.join(", ") || "(none listed)"}
 Listed by: ${safe.agentName}
 
