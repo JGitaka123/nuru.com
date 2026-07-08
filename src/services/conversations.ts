@@ -76,16 +76,38 @@ export async function listForUser(userId: string, role: "TENANT" | "AGENT" | "LA
       ? {}
       : { agentId: userId, archivedByAgent: false };
 
-  return prisma.conversation.findMany({
+  const conversations = await prisma.conversation.findMany({
     where,
     orderBy: { lastMessageAt: "desc" },
     take: 100,
     include: {
       messages: { take: 1, orderBy: { createdAt: "desc" } },
-      tenant: { select: { id: true, name: true, phoneE164: true } },
-      agent: { select: { id: true, name: true, phoneE164: true } },
-    } as never,    // simplified type; relations added once Prisma generates
+    },
   });
+
+  const userIds = [...new Set(conversations.flatMap((conversation) => [
+    conversation.tenantId,
+    conversation.agentId,
+  ]))];
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, name: true, phoneE164: true },
+  });
+  const usersById = new Map(users.map((user) => [user.id, user]));
+
+  return conversations.map((conversation) => ({
+    ...conversation,
+    tenant: usersById.get(conversation.tenantId) ?? {
+      id: conversation.tenantId,
+      name: null,
+      phoneE164: null,
+    },
+    agent: usersById.get(conversation.agentId) ?? {
+      id: conversation.agentId,
+      name: null,
+      phoneE164: null,
+    },
+  }));
 }
 
 export async function loadConversation(id: string, userId: string, role: "TENANT" | "AGENT" | "LANDLORD" | "ADMIN") {
