@@ -43,7 +43,7 @@ if [ ! -x "$VENV_DIR/bin/python" ]; then
 fi
 
 "$VENV_DIR/bin/python" -m pip install --upgrade pip
-"$VENV_DIR/bin/pip" install --index-url https://download.pytorch.org/whl/cpu "torch==2.5.1"
+"$VENV_DIR/bin/pip" install --index-url https://download.pytorch.org/whl/cpu "torch==2.6.0"
 "$VENV_DIR/bin/pip" install -r "$APP_DIR/infra/inference/cpu-server/requirements.txt"
 
 cat >/etc/systemd/system/"$SERVICE_NAME".service <<UNIT
