@@ -77,6 +77,9 @@ export async function releaseEscrow(escrowId: string): Promise<void> {
   const cfg = loadB2CConfig();
   const token = await getAccessToken();
   const payoutKes = Math.round((escrow.amountKesCents - escrow.feeKesCents) / 100);
+  if (!escrow.lease.landlord.phoneE164) {
+    throw new ConflictError("Landlord needs a phone number before escrow release");
+  }
   const phone = toDarajaFormat(escrow.lease.landlord.phoneE164);
 
   const base = cfg.env === "production" ? "https://api.safaricom.co.ke" : "https://sandbox.safaricom.co.ke";

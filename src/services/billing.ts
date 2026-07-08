@@ -10,7 +10,7 @@
  */
 
 import { prisma } from "../db/client";
-import { NotFoundError } from "../lib/errors";
+import { NotFoundError, ValidationError } from "../lib/errors";
 import { buildDarajaFromEnv } from "./mpesa";
 import { recordEvent } from "./events";
 import { sendSms } from "./notifications";
@@ -35,6 +35,9 @@ export async function chargeInvoice(invoiceId: string): Promise<{ status: "stk_s
     where: { id: invoice.subscription.userId },
     select: { phoneE164: true, name: true },
   });
+  if (!user.phoneE164) {
+    throw new ValidationError("Add a phone number before paying with M-Pesa");
+  }
 
   const daraja = buildDarajaFromEnv();
   const amountKes = Math.max(1, Math.round(invoice.amountKesCents / 100));
@@ -129,10 +132,12 @@ export async function handleSubscriptionStkCallback(merchantRequestId: string, p
 
     const sub = await prisma.subscription.findUniqueOrThrow({ where: { id: invoice.subscriptionId } });
     const user = await prisma.user.findUniqueOrThrow({ where: { id: sub.userId } });
-    sendSms(
-      user.phoneE164,
-      `Nuru: Payment received. Your subscription is active until ${invoice.periodEnd.toISOString().slice(0, 10)}. Receipt: ${payload.mpesaReceiptNumber}.`,
-    ).catch(() => undefined);
+    if (user.phoneE164) {
+      sendSms(
+        user.phoneE164,
+        `Nuru: Payment received. Your subscription is active until ${invoice.periodEnd.toISOString().slice(0, 10)}. Receipt: ${payload.mpesaReceiptNumber}.`,
+      ).catch(() => undefined);
+    }
 
     recordEvent({
       type: "escrow_held",

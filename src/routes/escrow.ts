@@ -32,6 +32,9 @@ export async function escrowRoutes(app: FastifyInstance) {
       if (lease.tenantId !== req.user.sub && req.user.role !== "ADMIN") {
         throw new ForbiddenError("Not your lease");
       }
+      if (!lease.tenant.phoneE164) {
+        throw new ValidationError("Add a phone number before paying with M-Pesa");
+      }
 
       const result = await initiateDeposit({
         leaseId,

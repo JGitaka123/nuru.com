@@ -71,10 +71,13 @@ export async function bookViewing(tenantId: string, input: z.infer<typeof Bookin
 
   // Notify the agent.
   const tenant = await prisma.user.findUniqueOrThrow({ where: { id: tenantId } });
-  sendSms(
-    listing.agent.phoneE164,
-    `Nuru: New viewing request for "${listing.title}" by ${tenant.name ?? toDisplay(tenant.phoneE164)} on ${formatEAT(data.scheduledAt)}. Confirm in the app.`,
-  ).catch((e) => logger.error({ err: e }, "agent sms failed"));
+  if (listing.agent.phoneE164) {
+    const tenantLabel = tenant.name ?? (tenant.phoneE164 ? toDisplay(tenant.phoneE164) : "a tenant");
+    sendSms(
+      listing.agent.phoneE164,
+      `Nuru: New viewing request for "${listing.title}" by ${tenantLabel} on ${formatEAT(data.scheduledAt)}. Confirm in the app.`,
+    ).catch((e) => logger.error({ err: e }, "agent sms failed"));
+  }
 
   return viewing;
 }
@@ -88,10 +91,12 @@ export async function confirmViewing(viewingId: string, userId: string, role: Us
     data: { status: "CONFIRMED" },
   });
 
-  sendSms(
-    v.tenant.phoneE164,
-    `Nuru: Your viewing for "${v.listing.title}" on ${formatEAT(v.scheduledAt)} is confirmed. Reply CANCEL to cancel.`,
-  ).catch(() => undefined);
+  if (v.tenant.phoneE164) {
+    sendSms(
+      v.tenant.phoneE164,
+      `Nuru: Your viewing for "${v.listing.title}" on ${formatEAT(v.scheduledAt)} is confirmed. Reply CANCEL to cancel.`,
+    ).catch(() => undefined);
+  }
 
   // Schedule a reminder ~24h before the viewing.
   const reminderDelay = v.scheduledAt.getTime() - Date.now() - 24 * 60 * 60 * 1000;

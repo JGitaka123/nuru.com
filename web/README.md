@@ -27,7 +27,7 @@ The API must be running on the host pointed to by `NEXT_PUBLIC_API_URL`
 - `/search?q=…` — conversational search results
 - `/listing/[id]` — listing detail
 - `/listing/[id]/book` — viewing booking
-- `/login` — phone OTP flow
+- `/login` — email or phone OTP flow
 - `/me/viewings` — tenant: my viewings; agent: viewings on my listings
 - `/agent` — agent dashboard
 - `/agent/new` — listing creator (photos → AI draft)
