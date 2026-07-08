@@ -248,6 +248,34 @@ the developer needs to complete before going live. Most items have lead times
 - Same docker-compose, different host. Slightly cheaper if you can tolerate
   occasional preemption (we have no SLA for these — workers retry).
 
+### Interim: Contabo CPU fallback
+
+Until the dedicated GPU host is live, Contabo can run the CPU fallback service
+from `infra/inference/cpu-server` on `127.0.0.1:8101`. This is slower than the
+GPU stack and uses lexical reranking by default, but it keeps listing
+embeddings and voice search available during launch.
+
+Run on the VPS after deploying `main`:
+
+```bash
+scripts/deploy-inference-cpu.sh
+```
+
+The script sets these API env vars without using the occupied default ports:
+
+```bash
+EMBEDDING_URL=http://127.0.0.1:8101
+RERANKER_URL=http://127.0.0.1:8101
+WHISPER_URL=http://127.0.0.1:8101
+```
+
+Verify:
+
+```bash
+curl http://127.0.0.1:8101/health
+curl https://api.nuruhomes.com/health
+```
+
 ---
 
 ## 11. Hosting — API, workers, web
