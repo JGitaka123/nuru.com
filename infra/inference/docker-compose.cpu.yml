@@ -1,0 +1,28 @@
+# Interim CPU inference service for Contabo.
+#
+# Long-term production should use docker-compose.yml on a GPU host. This CPU
+# service keeps the same API contract on a non-conflicting local port.
+
+services:
+  inference-cpu:
+    build: ./cpu-server
+    container_name: nuru-inference-cpu
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8101:8101"
+    environment:
+      - HF_HOME=/models
+      - TRANSFORMERS_CACHE=/models
+      - EMBEDDING_MODEL=BAAI/bge-m3
+      - EMBEDDING_DIM=1024
+      - EMBEDDING_DEVICE=cpu
+      - RERANKER_MODE=lexical
+      - WHISPER_MODEL=small
+      - WHISPER_DEVICE=cpu
+      - WHISPER_COMPUTE_TYPE=int8
+      - INFERENCE_PRELOAD=embedding,whisper
+    volumes:
+      - inference-model-cache:/models
+
+volumes:
+  inference-model-cache:

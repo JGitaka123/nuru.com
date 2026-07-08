@@ -75,6 +75,13 @@ cd /opt/nuru/app
 sudo scripts/deploy-contabo.sh
 ```
 
+If the dedicated GPU inference box is not yet live, deploy or refresh the
+Contabo CPU fallback after the app deploy:
+
+```bash
+sudo scripts/deploy-inference-cpu.sh
+```
+
 ## Rolling back
 
 ### API / workers / web (Contabo)
