@@ -1,6 +1,6 @@
 # Runbooks
 
-Operational procedures for Nuru.com.
+Operational procedures for Nuru Homes.
 
 | Doc | Use when |
 |---|---|

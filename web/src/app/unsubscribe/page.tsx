@@ -16,7 +16,7 @@ export default async function UnsubscribePage({ searchParams }: PageProps) {
       <p className="mt-3 text-ink-600">
         {ok
           ? "You will no longer receive Nuru marketing emails."
-          : "The unsubscribe link is invalid or temporarily unavailable. You can contact hello@nuru.com for help."}
+          : "The unsubscribe link is invalid or temporarily unavailable. You can contact hello@nuruhomes.com for help."}
       </p>
     </main>
   );

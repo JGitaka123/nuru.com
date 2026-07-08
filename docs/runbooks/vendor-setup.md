@@ -52,9 +52,9 @@ the developer needs to complete before going live. Most items have lead times
    - Encrypt the initiator password with Safaricom's prod cert.
    - See `infra/scripts/generate-b2c-credential.sh` (TODO).
 4. Whitelist callback URLs with Safaricom (not self-service):
-   - `https://api.nuru.com/v1/webhooks/mpesa`
-   - `https://api.nuru.com/v1/webhooks/mpesa/b2c-result`
-   - `https://api.nuru.com/v1/webhooks/mpesa/b2c-timeout`
+   - `https://api.nuruhomes.com/v1/webhooks/mpesa`
+   - `https://api.nuruhomes.com/v1/webhooks/mpesa/b2c-result`
+   - `https://api.nuruhomes.com/v1/webhooks/mpesa/b2c-timeout`
 5. Switch `MPESA_ENV=production` and rotate keys.
 6. **Do a 1 KES end-to-end test** with a real number before launching.
 
@@ -103,7 +103,7 @@ the developer needs to complete before going live. Most items have lead times
    - Copy `Access Key ID`, `Secret Access Key`, `Account ID`.
 5. **Custom domain** for the public bucket:
    - R2 → Bucket → Settings → Connect custom domain
-   - Use `photos.nuru.com` (matches `R2_PUBLIC_URL` default).
+   - Use `photos.nuruhomes.com` (matches `R2_PUBLIC_URL` default).
    - DNS auto-configures if your zone is on Cloudflare.
 6. Enable **R2 Image Resizing** (separate sub-product, ~$0.50 / 1k requests).
 7. Set env:
@@ -112,7 +112,7 @@ the developer needs to complete before going live. Most items have lead times
    R2_ACCESS_KEY_ID=...
    R2_SECRET_ACCESS_KEY=...
    R2_BUCKET=nuru-photos
-   R2_PUBLIC_URL=https://photos.nuru.com
+   R2_PUBLIC_URL=https://photos.nuruhomes.com
    ```
 8. Verify: `curl -X PUT -H "Authorization: Bearer $TOKEN" https://<account-id>.r2.cloudflarestorage.com/nuru-photos/test.txt --data-binary "hello"`
 
@@ -132,7 +132,7 @@ the developer needs to complete before going live. Most items have lead times
    never expiring). Scope: `whatsapp_business_messaging`,
    `whatsapp_business_management`.
 5. **Subscribe webhook**:
-   - URL: `https://api.nuru.com/v1/webhooks/whatsapp`
+   - URL: `https://api.nuruhomes.com/v1/webhooks/whatsapp`
    - Verify token: any random string; set `WHATSAPP_VERIFY_TOKEN=...` to match.
    - Subscribe to `messages` field.
 6. Pre-approve **message templates** (utility templates only, no marketing):
@@ -154,15 +154,15 @@ the developer needs to complete before going live. Most items have lead times
 ## 6. Resend (email) — required for marketing engine, 30 min + DNS warm-up
 
 1. Sign up at <https://resend.com>.
-2. Add domain `nuru.com`. Add the SPF + DKIM DNS records they show you
+2. Add domain `nuruhomes.com`. Add the SPF + DKIM DNS records they show you
    (Cloudflare can do this in 2 min).
 3. Verify the domain.
 4. Generate API key. Set `RESEND_API_KEY=re_...`.
-5. Set `EMAIL_FROM="Nuru <noreply@nuru.com>"` and `EMAIL_REPLY_TO=hello@nuru.com`.
-6. Configure DMARC to `quarantine` (TXT record `_dmarc.nuru.com` →
-   `v=DMARC1; p=quarantine; rua=mailto:dmarc@nuru.com`).
+5. Set `EMAIL_FROM="Nuru <noreply@nuruhomes.com>"` and `EMAIL_REPLY_TO=hello@nuruhomes.com`.
+6. Configure DMARC to `quarantine` (TXT record `_dmarc.nuruhomes.com` →
+   `v=DMARC1; p=quarantine; rua=mailto:dmarc@nuruhomes.com`).
 7. **Webhook**: Resend dashboard → Webhooks → Add endpoint
-   `https://api.nuru.com/v1/webhooks/resend`. Subscribe to: `email.delivered`,
+   `https://api.nuruhomes.com/v1/webhooks/resend`. Subscribe to: `email.delivered`,
    `email.opened`, `email.clicked`, `email.bounced`, `email.complained`.
 8. **Warm-up the domain** before running campaigns at scale: send 30-50
    transactional emails/day for the first week (OTP, viewing reminders).
@@ -240,9 +240,9 @@ the developer needs to complete before going live. Most items have lead times
 3. Clone the repo, `cd infra/inference`, `docker compose up -d`.
 4. Health check: `curl http://localhost:8001/health`
 5. Expose to the API service via private network or a Cloudflare Tunnel:
-   - `EMBEDDING_URL=https://embed.internal.nuru.com`
-   - `RERANKER_URL=https://rerank.internal.nuru.com`
-   - `WHISPER_URL=https://whisper.internal.nuru.com`
+   - `EMBEDDING_URL=https://embed.internal.nuruhomes.com`
+   - `RERANKER_URL=https://rerank.internal.nuruhomes.com`
+   - `WHISPER_URL=https://whisper.internal.nuruhomes.com`
 
 ### Alternative: Lambda Labs / RunPod
 - Same docker-compose, different host. Slightly cheaper if you can tolerate
@@ -252,37 +252,32 @@ the developer needs to complete before going live. Most items have lead times
 
 ## 11. Hosting — API, workers, web
 
-### Recommended setup:
-- **API + workers**: Railway (or Fly.io) — long-running Node containers.
-- **Web**: Vercel — Next.js native deploy.
+### Current setup:
+- **API + workers + web**: Contabo VPS, systemd services
+  `nuru-api`, `nuru-workers`, `nuru-web`.
 - **DNS + WAF**: Cloudflare.
+- **Database**: Neon PostgreSQL.
 
-### Vercel (web)
-1. Connect the GitHub repo at <https://vercel.com>.
-2. Set root: `web/`. Framework: Next.js.
-3. Set env: `NEXT_PUBLIC_API_URL=https://api.nuru.com`,
-   `NEXT_PUBLIC_PHOTO_URL=https://photos.nuru.com`,
-   `NEXT_PUBLIC_SENTRY_DSN=...`.
-4. Domain: `nuru.com` and `www.nuru.com` → Vercel project.
-
-### Railway (api + workers)
-1. New project from the repo at <https://railway.app>.
-2. Service 1: API.
-   - Root: `/`. Build: `pnpm install && pnpm build`. Start: `pnpm start`.
-   - Domain: `api.nuru.com`.
-   - Set all API env vars.
-3. Service 2: Workers.
-   - Same build. Start: `pnpm start:workers`.
-   - **No public port** — workers are internal.
-   - Same env vars (workers also need MPESA_B2C_*).
-4. Database connection from Railway: use the pooler URL above.
+### Contabo (api + workers + web)
+1. Clone the repo to `/opt/nuru/app`.
+2. Create the `nuru` Linux user and make it own `/opt/nuru/app`.
+3. Store API/workers env in `/etc/nuru/api.env`; store web build/runtime env
+   in `/etc/nuru/web.env`.
+4. Install systemd units for:
+   - `nuru-api`: `pnpm start`, port `4100`
+   - `nuru-workers`: `pnpm start:workers`
+   - `nuru-web`: `pnpm start`, working directory `/opt/nuru/app/web`, port `3100`
+5. Deploy merged `main` with `scripts/deploy-contabo.sh`.
+6. Configure Nginx/Cloudflare to route:
+   - `https://nuruhomes.com` → `127.0.0.1:3100`
+   - `https://api.nuruhomes.com` → `127.0.0.1:4100`
 
 ### Cloudflare DNS
-- `nuru.com` → Vercel
-- `www.nuru.com` → Vercel
-- `api.nuru.com` → Railway (proxied through Cloudflare for WAF + rate limits)
-- `photos.nuru.com` → Cloudflare R2 custom domain
-- `*.internal.nuru.com` → Cloudflare Tunnel to GPU box
+- `nuruhomes.com` → Contabo VPS
+- `www.nuruhomes.com` → Contabo VPS
+- `api.nuruhomes.com` → Contabo VPS (proxied through Cloudflare for WAF + rate limits)
+- `photos.nuruhomes.com` → Cloudflare R2 custom domain
+- `*.internal.nuruhomes.com` → Cloudflare Tunnel to GPU box
 
 ---
 
@@ -296,7 +291,7 @@ the developer needs to complete before going live. Most items have lead times
    ```
    VAPID_PUBLIC_KEY=...
    VAPID_PRIVATE_KEY=...
-   VAPID_SUBJECT=mailto:ops@nuru.com
+   VAPID_SUBJECT=mailto:ops@nuruhomes.com
    ```
 3. Set `NEXT_PUBLIC_VAPID_PUBLIC_KEY` in `web/.env` (matches the public key).
 4. Subscriptions are stored in `PushSubscription` (Prisma) — check the
@@ -332,7 +327,7 @@ you rotate.)
 
 Once everything above is configured, run through:
 
-- [ ] Health endpoint returns 200: `curl https://api.nuru.com/health`
+- [ ] Health endpoint returns 200: `curl https://api.nuruhomes.com/health`
 - [ ] OTP flow works end-to-end with a real number
 - [ ] Photo upload → R2 → public URL is reachable
 - [ ] Listing creator triggers AI enrichment within 60s

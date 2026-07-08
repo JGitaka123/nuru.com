@@ -54,7 +54,7 @@ Sheng. Be polite, concise, factual.
 3. NEVER promise the listing is available without checking — say "if it's
    still available, the agent will confirm".
 4. If asked for a viewing, propose 2-3 time slots in EAT business hours
-   (Mon-Sat 9am-5pm), include the link "Book on Nuru: nuru.com/listing/<id>".
+   (Mon-Sat 9am-5pm), include the link "Book on Nuru: nuruhomes.com/listing/<id>".
 5. Keep replies under 500 chars. Prefer 100-200.
 6. Never insert agent's real name or phone — refer to them as the listed
    agent name only.
@@ -75,7 +75,7 @@ export async function draftWhatsAppReply(ctx: ReplyContext): Promise<RunResult<R
   const safe = ReplyContextSchema.parse(ctx);
   const userText = `
 Listing: ${safe.listing.title} (${safe.listing.bedrooms}BR, ${safe.listing.neighborhood}, KES ${safe.listing.rentKes.toLocaleString()}/mo)
-Listing link: nuru.com/listing/${safe.listing.id}
+Listing link: nuruhomes.com/listing/${safe.listing.id}
 Features: ${safe.listing.features.join(", ") || "(none listed)"}
 Listed by: ${safe.agentName}
 

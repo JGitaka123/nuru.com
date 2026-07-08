@@ -13,7 +13,7 @@ import { sendSms } from "../services/notifications";
 import { send as sendEmail } from "../services/email";
 import { sendPush } from "../lib/push";
 
-const PHOTO_BASE = process.env.R2_PUBLIC_URL ?? "https://photos.nuru.com";
+const PHOTO_BASE = process.env.R2_PUBLIC_URL ?? "https://photos.nuruhomes.com";
 
 export function startSearchAlertWorker() {
   const worker = new BullWorker<SearchAlertJob>(
@@ -82,7 +82,7 @@ async function sendAlert(
   if (ss.alertSms && user.phoneE164) {
     await sendSms(
       user.phoneE164,
-      `Nuru: New match for "${ss.name}" — ${listing.title} in ${listing.neighborhood}, KES ${rentKes}/mo. nuru.com${linkPath}`,
+      `Nuru: New match for "${ss.name}" — ${listing.title} in ${listing.neighborhood}, KES ${rentKes}/mo. nuruhomes.com${linkPath}`,
     ).catch(() => undefined);
   }
 
@@ -91,12 +91,12 @@ async function sendAlert(
     await sendEmail({
       to: user.email,
       subject: `New match: ${listing.title}`,
-      text: `A listing just published that matches your saved search "${ss.name}":\n\n${listing.title}\n${listing.neighborhood} · KES ${rentKes}/mo\n\nView it: ${process.env.WEB_URL ?? "https://nuru.com"}${linkPath}`,
+      text: `A listing just published that matches your saved search "${ss.name}":\n\n${listing.title}\n${listing.neighborhood} · KES ${rentKes}/mo\n\nView it: ${process.env.WEB_URL ?? "https://nuruhomes.com"}${linkPath}`,
       html: `<p>A listing just published that matches your saved search <strong>${ss.name}</strong>:</p>
 ${photo ? `<p><img src="${photo}" alt="" style="max-width:100%;border-radius:8px"/></p>` : ""}
-<h2 style="margin:12px 0 4px"><a href="${process.env.WEB_URL ?? "https://nuru.com"}${linkPath}">${escapeHtml(listing.title)}</a></h2>
+<h2 style="margin:12px 0 4px"><a href="${process.env.WEB_URL ?? "https://nuruhomes.com"}${linkPath}">${escapeHtml(listing.title)}</a></h2>
 <p style="color:#555">${escapeHtml(listing.neighborhood)} · KES ${rentKes}/mo</p>
-<p><a href="${process.env.WEB_URL ?? "https://nuru.com"}${linkPath}" style="background:#f5840b;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;display:inline-block">View listing</a></p>`,
+<p><a href="${process.env.WEB_URL ?? "https://nuruhomes.com"}${linkPath}" style="background:#f5840b;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;display:inline-block">View listing</a></p>`,
       marketing: false,         // user opted in, but it's transactional alert
       tags: [{ name: "alert", value: "saved-search" }],
     }).catch(() => undefined);

@@ -6,7 +6,7 @@
  * is precious and we pay for it on the API side.
  *
  * Read pattern: published listings get the public CDN URL
- * (https://photos.nuru.com/<key>). Private docs (IDs, leases) get short-lived
+ * (https://photos.nuruhomes.com/<key>). Private docs (IDs, leases) get short-lived
  * signed GET URLs.
  */
 
@@ -19,7 +19,7 @@ const accountId = process.env.R2_ACCOUNT_ID;
 const accessKeyId = process.env.R2_ACCESS_KEY_ID;
 const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
 const bucket = process.env.R2_BUCKET ?? "nuru-photos";
-const publicUrl = process.env.R2_PUBLIC_URL ?? "https://photos.nuru.com";
+const publicUrl = process.env.R2_PUBLIC_URL ?? "https://photos.nuruhomes.com";
 
 let _client: S3Client | undefined;
 function client(): S3Client {

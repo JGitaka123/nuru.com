@@ -118,7 +118,7 @@ export async function viewingRoutes(app: FastifyInstance) {
         "VERSION:2.0",
         "PRODID:-//Nuru//Viewings//EN",
         "BEGIN:VEVENT",
-        `UID:viewing-${v.id}@nuru.com`,
+        `UID:viewing-${v.id}@nuruhomes.com`,
         `DTSTAMP:${dt(new Date())}`,
         `DTSTART:${dt(start)}`,
         `DTEND:${dt(end)}`,

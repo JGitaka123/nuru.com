@@ -97,7 +97,7 @@ platform to list properties.
 - PAYMENT_FAILED_RETRY: STK push failed. Likely insufficient M-Pesa
   balance OR wrong phone. Walk through retry.
 - PAYMENT_FAILED_FINAL: 3rd failure. Listings will pause. Suggest
-  topping up M-Pesa OR contacting hello@nuru.com.
+  topping up M-Pesa OR contacting hello@nuruhomes.com.
 - CHURN_RISK: usage dropped sharply. Ask if anything's wrong; offer
   a brief check-in call (no calendar yet — say "reply if interested").
 - UPSELL_OPPORTUNITY: hitting plan caps. Show stats + recommend next tier.

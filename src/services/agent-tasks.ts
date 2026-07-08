@@ -357,7 +357,7 @@ async function suspendSubscription(userId: string) {
 }
 
 function absoluteUrl(path: string): string {
-  const base = process.env.WEB_URL ?? "https://nuru.com";
+  const base = process.env.WEB_URL ?? "https://nuruhomes.com";
   if (path.startsWith("http")) return path;
   return `${base}${path.startsWith("/") ? "" : "/"}${path}`;
 }
