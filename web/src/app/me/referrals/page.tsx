@@ -30,7 +30,7 @@ export default function ReferralsPage() {
   }
 
   function shareUrl(code: string) {
-    const base = typeof window !== "undefined" ? window.location.origin : "https://nuru.com";
+    const base = typeof window !== "undefined" ? window.location.origin : "https://nuruhomes.com";
     return `${base}/?ref=${code}`;
   }
 

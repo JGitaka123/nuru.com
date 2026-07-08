@@ -35,9 +35,9 @@ interface SendResult {
   reason?: string;
 }
 
-const FROM = process.env.EMAIL_FROM ?? "Nuru <noreply@nuru.com>";
-const REPLY_TO = process.env.EMAIL_REPLY_TO ?? "hello@nuru.com";
-const UNSUBSCRIBE_BASE = process.env.WEB_URL ?? "https://nuru.com";
+const FROM = process.env.EMAIL_FROM ?? "Nuru <noreply@nuruhomes.com>";
+const REPLY_TO = process.env.EMAIL_REPLY_TO ?? "hello@nuruhomes.com";
+const UNSUBSCRIBE_BASE = process.env.WEB_URL ?? "https://nuruhomes.com";
 
 function isConfigured(): boolean {
   return !!process.env.RESEND_API_KEY;
@@ -53,7 +53,7 @@ export function withFooter(body: string, email: string, marketing: boolean): { t
   const unsubscribe = unsubscribeUrl(email);
   const footerText = marketing
     ? `\n\n--\nNuru.com · Long-term rentals in Nairobi · Westlands, Nairobi, Kenya\nUnsubscribe: ${unsubscribe}\nWe never share your email. ODPC reg: <pending>.`
-    : `\n\n--\nNuru.com · Westlands, Nairobi, Kenya\nNeed help? hello@nuru.com`;
+    : `\n\n--\nNuru Homes · Westlands, Nairobi, Kenya\nNeed help? hello@nuruhomes.com`;
   const text = body + footerText;
   const html = `<div style="font-family:system-ui,sans-serif;line-height:1.5;color:#1f232c">
   ${body.split("\n").map((l) => `<p style="margin:0 0 12px">${escapeHtml(l)}</p>`).join("")}

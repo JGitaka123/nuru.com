@@ -54,7 +54,7 @@ export default function PrivacyPage() {
       <p>
         Under the Data Protection Act 2019, you have the right to access,
         correct, delete, and port your data, and to object to processing.
-        Contact <a className="text-brand-600 underline" href="mailto:privacy@nuru.com">privacy@nuru.com</a> to
+        Contact <a className="text-brand-600 underline" href="mailto:privacy@nuruhomes.com">privacy@nuruhomes.com</a> to
         exercise any of these.
       </p>
 
@@ -67,7 +67,7 @@ export default function PrivacyPage() {
 
       <h2 className="text-xl font-semibold">Contact</h2>
       <p>
-        Data Protection Officer: <a className="text-brand-600 underline" href="mailto:dpo@nuru.com">dpo@nuru.com</a>.
+        Data Protection Officer: <a className="text-brand-600 underline" href="mailto:dpo@nuruhomes.com">dpo@nuruhomes.com</a>.
         ODPC complaint portal: <a className="text-brand-600 underline" href="https://www.odpc.go.ke/" target="_blank" rel="noreferrer">odpc.go.ke</a>.
       </p>
     </article>

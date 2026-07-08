@@ -22,6 +22,6 @@ export function formatCategory(c: string): string {
 
 export function photoUrl(key: string | null | undefined): string | null {
   if (!key) return null;
-  const base = process.env.NEXT_PUBLIC_PHOTO_URL ?? "https://photos.nuru.com";
+  const base = process.env.NEXT_PUBLIC_PHOTO_URL ?? "https://photos.nuruhomes.com";
   return `${base}/${key}`;
 }

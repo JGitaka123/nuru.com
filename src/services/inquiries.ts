@@ -51,7 +51,7 @@ export async function createInquiry(tenantId: string, input: z.infer<typeof Inqu
   if (listing.agent.phoneE164) {
     sendSms(
       listing.agent.phoneE164,
-      `Nuru: New inquiry on "${listing.title.slice(0, 40)}". Reply in the app: nuru.com/agent`,
+      `Nuru: New inquiry on "${listing.title.slice(0, 40)}". Reply in the app: nuruhomes.com/agent`,
     ).catch((e) => logger.warn({ err: e }, "agent sms failed"));
   }
 

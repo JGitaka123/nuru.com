@@ -159,7 +159,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             "@type": "RealEstateListing",
             name: listing.title,
             description: listing.description,
-            url: `${process.env.NEXT_PUBLIC_WEB_URL ?? "https://nuru.com"}/listing/${listing.id}`,
+            url: `${process.env.NEXT_PUBLIC_WEB_URL ?? "https://nuruhomes.com"}/listing/${listing.id}`,
             address: {
               "@type": "PostalAddress",
               addressLocality: listing.neighborhood,
@@ -174,7 +174,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
               priceCurrency: "KES",
               availability: listing.status === "ACTIVE" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
             },
-            image: listing.primaryPhotoKey ? `${process.env.NEXT_PUBLIC_PHOTO_URL ?? "https://photos.nuru.com"}/${listing.primaryPhotoKey}` : undefined,
+            image: listing.primaryPhotoKey ? `${process.env.NEXT_PUBLIC_PHOTO_URL ?? "https://photos.nuruhomes.com"}/${listing.primaryPhotoKey}` : undefined,
           }),
         }}
       />

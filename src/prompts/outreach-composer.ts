@@ -56,7 +56,7 @@ real estate agents, developers, landlords.
 4. Mention something SPECIFIC about the recipient organization (use the
    signalNotes / type / city). Do NOT generic-spray.
 5. End with one clear, low-friction CTA: "Reply to this email" OR
-   "Book a 10-minute call here: nuru.com/agent". Never both.
+   "Book a 10-minute call here: nuruhomes.com/agent". Never both.
 6. Include nothing illegal: no PII about specific people, no scraped phone
    numbers, no unverified claims.
 7. If signalNotes is empty/weak OR organizationName looks fake/PII,

@@ -1,13 +1,14 @@
 # Deployment Runbook
 
-End-to-end deploy procedure for Nuru.com. Run alongside
+End-to-end deploy procedure for Nuru Homes. Run alongside
 [`vendor-setup.md`](./vendor-setup.md) — that doc covers the one-time
 account/credential setup; this doc covers the recurring deploy steps.
 
 ## Prerequisites
 
 - All vendor accounts configured (see `vendor-setup.md`).
-- Production secrets in your hosting provider (Railway / Vercel).
+- Production secrets in `/etc/nuru/api.env` and `/etc/nuru/web.env` on the
+  Contabo VPS.
 - Local clone of the repo with the target commit.
 
 ## First-time deploy
@@ -35,19 +36,19 @@ account/credential setup; this doc covers the recurring deploy steps.
    ```
    Creates the canonical neighborhood list and a synthetic admin account.
 
-4. **Deploy API**
-   - Push to `main` triggers Railway autodeploy.
-   - Check `https://api.nuru.com/health` returns `{"status":"ok"}`.
+4. **Deploy API, workers, and web on Contabo**
+   SSH to the VPS and run:
+   ```bash
+   cd /opt/nuru/app
+   sudo scripts/deploy-contabo.sh
+   ```
+   The script fetches `origin/main`, builds as the `nuru` service user,
+   restores `/opt/nuru/app` ownership, restarts `nuru-api`, `nuru-workers`,
+   and `nuru-web`, then checks:
+   - `https://api.nuruhomes.com/health`
+   - `https://nuruhomes.com/login`
 
-5. **Deploy workers**
-   - Same push triggers the workers service.
-   - Check Railway logs for `workers started`.
-
-6. **Deploy web**
-   - Push triggers Vercel autodeploy.
-   - Check `https://nuru.com` loads.
-
-7. **Smoke-test** (see `vendor-setup.md` §15).
+5. **Smoke-test** (see `vendor-setup.md` §15).
 
 ## Recurring deploys
 
@@ -66,17 +67,28 @@ gh pr create
 # ... review, merge ...
 ```
 
-Vercel and Railway autodeploy on merge to `main`.
+After merging to `main`, deploy on Contabo:
+
+```bash
+ssh root@161.97.172.192
+cd /opt/nuru/app
+sudo scripts/deploy-contabo.sh
+```
 
 ## Rolling back
 
-### API / workers (Railway)
-- Railway dashboard → Service → Deployments → Click a previous successful
-  deploy → "Redeploy".
+### API / workers / web (Contabo)
+Check out the last known-good merge commit and rerun the Contabo deploy
+script:
 
-### Web (Vercel)
-- Vercel dashboard → Project → Deployments → "Promote to Production" on
-  any prior build.
+```bash
+cd /opt/nuru/app
+git checkout main
+git reset --hard <known-good-sha>
+sudo scripts/deploy-contabo.sh
+```
+
+Do not roll back the database; migrations are forward-only.
 
 ### Database
 - Migrations are **forward-only**. Roll back with a new "down" migration:
@@ -99,7 +111,7 @@ Vercel and Railway autodeploy on merge to `main`.
 ## Monitoring
 
 - **Sentry**: errors. PagerDuty integration for severity ≥ "error".
-- **Railway logs**: live logs per service.
+- **systemd journals**: `journalctl -u nuru-api -u nuru-workers -u nuru-web`.
 - **AI cost**: `recordAiCost` events in logs; aggregate in Grafana
   (`Nuru → AI Costs`).
 - **Daraja webhook delivery**: any non-200 from our endpoint causes Daraja
@@ -112,13 +124,13 @@ Vercel and Railway autodeploy on merge to `main`.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| 502 on `/health` | API process died on boot | Check Railway logs; usually missing env var |
+| 502 on `/health` | API process died on boot | Check `journalctl -u nuru-api`; usually missing env var |
 | Migrations hang | Pooled URL used | Switch to `DIRECT_URL` |
 | OTP requests succeed but no SMS | `AT_SENDER_ID=NURU` but not approved | Either wait for approval or unset to use sandbox |
 | STK push 401 | Daraja access token expired | We refresh 5 min early — if persistent, rotate consumer key |
 | B2C "Initiator information is invalid" | Security credential generated against wrong env's cert | Regenerate against the matching env's cert |
 | Workers not picking up jobs | Wrong `REDIS_URL` or queue name mismatch | Check `src/workers/queues.ts` matches API |
-| Photos 403 from R2 | Bucket not public OR custom domain not connected | R2 → Bucket → Public access; verify `photos.nuru.com` resolves |
+| Photos 403 from R2 | Bucket not public OR custom domain not connected | R2 → Bucket → Public access; verify `photos.nuruhomes.com` resolves |
 
 ## Daraja sandbox quirks
 

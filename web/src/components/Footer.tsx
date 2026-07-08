@@ -11,7 +11,7 @@ export default function Footer() {
         <span>© {new Date().getFullYear()} {t("footer.tagline")}</span>
         <nav className="flex gap-4">
           <Link href="/privacy" className="hover:text-brand-600">{t("footer.privacy")}</Link>
-          <a href="mailto:hello@nuru.com" className="hover:text-brand-600">{t("footer.contact")}</a>
+          <a href="mailto:hello@nuruhomes.com" className="hover:text-brand-600">{t("footer.contact")}</a>
         </nav>
       </div>
     </footer>
