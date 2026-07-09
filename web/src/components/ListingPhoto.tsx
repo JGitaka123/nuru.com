@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Listing photo with graceful degradation — a broken/unreachable image
+ * Listing photo with graceful degradation: a broken/unreachable image
  * swaps to the same "No photo" placeholder instead of the browser's
  * broken-image glyph.
  */
@@ -23,7 +23,10 @@ export default function ListingPhoto({
   if (!src || failed) {
     return (
       <div className={`flex items-center justify-center bg-ink-100 text-sm text-ink-400 ${className}`}>
-        No photo
+        <div className="text-center">
+          <div className="mx-auto mb-2 h-10 w-10 rounded-md border border-ink-200 bg-surface" aria-hidden="true" />
+          <span>No photo yet</span>
+        </div>
       </div>
     );
   }
