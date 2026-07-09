@@ -21,22 +21,30 @@ export default function HeaderNav() {
   const { t } = useI18n();
 
   return (
-    <header className="sticky top-0 z-30 border-b border-ink-200 bg-surface">
+    <header className="sticky top-0 z-30 border-b border-ink-200 bg-surface/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <Link href="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand-500 text-white font-bold">N</span>
-          <span className="font-semibold text-lg">Nuru</span>
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-ink-900 text-white font-bold">N</span>
+          <span className="leading-tight">
+            <span className="block text-lg font-bold">Nuru</span>
+            <span className="hidden text-xs text-ink-500 md:block">Nairobi rentals</span>
+          </span>
         </Link>
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-4 text-sm sm:flex">
+          <Link href="/search" className="rounded-md bg-ink-100 px-3 py-2 font-semibold text-ink-800 hover:bg-ink-200">
+            {t("nav.search")}
+          </Link>
           {TENANT_LINKS.map(([href, key]) => (
-            <Link key={href} href={href} className="hover:text-brand-600">{t(key)}</Link>
+            href === "/search" ? null : (
+              <Link key={href} href={href} className="hover:text-brand-600">{t(key)}</Link>
+            )
           ))}
           <Link href="/agent" className="hover:text-brand-600">{t("nav.forAgents")}</Link>
           <LangToggle />
           <ThemeToggle />
-          <Link href="/login" className="rounded-md bg-brand-500 px-3 py-1.5 font-medium text-white hover:bg-brand-600">{t("nav.signIn")}</Link>
+          <Link href="/login" className="rounded-md bg-brand-500 px-3 py-2 font-semibold text-white hover:bg-brand-600">{t("nav.signIn")}</Link>
         </nav>
 
         {/* Mobile: toggles stay visible next to the burger */}
