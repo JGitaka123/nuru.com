@@ -34,14 +34,19 @@ export async function searchRoutes(app: FastifyInstance) {
     // If Claude is unreachable, degrade to the deterministic parser —
     // a keyword search beats a 500.
     let degraded = false;
-    const f = await parseSearchQuery(q).then(
-      (r) => r.content,
-      (err) => {
-        logger.warn({ err }, "search parser unavailable — heuristic fallback");
-        degraded = true;
-        return heuristicParseSearchQuery(q);
-      },
-    );
+    const f = process.env.ANTHROPIC_API_KEY
+      ? await parseSearchQuery(q).then(
+          (r) => r.content,
+          (err) => {
+            logger.warn({ err }, "search parser unavailable — heuristic fallback");
+            degraded = true;
+            return heuristicParseSearchQuery(q);
+          },
+        )
+      : (() => {
+          degraded = true;
+          return heuristicParseSearchQuery(q);
+        })();
 
     // Step 2: SQL filter pass — narrow to plausible candidates.
     // Using Prisma's raw SQL for pgvector — we'll add the geo + vector
@@ -79,6 +84,29 @@ export async function searchRoutes(app: FastifyInstance) {
       filterClauses.push(`$${p} = ANY(features)`);
       params.push(feat);
       p++;
+    }
+
+    const hasCandidates = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+      `
+      SELECT id
+      FROM "Listing"
+      WHERE ${filterClauses.join(" AND ")}
+      LIMIT $${p}
+      `,
+      ...params,
+      1,
+    );
+
+    if (hasCandidates.length === 0) {
+      return reply.send({
+        filters: f,
+        clarifyingQuestion: f.clarifyingQuestion,
+        results: [],
+        degraded,
+        suggestion: f.neighborhoods.length
+          ? "No matches in those neighborhoods. Try expanding your area or budget."
+          : null,
+      });
     }
 
     // Step 3: embed semantic intent. If the inference box is down, fall
