@@ -32,8 +32,8 @@ deposits fail.
 Symptoms: OTP request returns 500, JWT verify fails for everyone.
 
 1. Check `JWT_SECRET` is set in API env.
-2. Check Africa's Talking dashboard for SMS delivery rate.
-3. If AT is healthy and OTPs not arriving, check rate-limit buckets aren't
+2. Check SwiftAlert/Onfon dashboard for SMS delivery rate.
+3. If SMS delivery is healthy and OTPs are not arriving, check rate-limit buckets aren't
    stuck (restart API process resets in-memory buckets).
 4. If JWT verify fails system-wide: did someone rotate `JWT_SECRET` without
    setting `JWT_SECRET_PREVIOUS`? Roll back the deploy.

@@ -17,7 +17,7 @@
 import { createHash, randomInt } from "node:crypto";
 import { prisma } from "../db/client";
 import { send } from "./email";
-import { sendSms } from "./notifications";
+import { isSmsConfigured, sendSms } from "./notifications";
 import { logger } from "../lib/logger";
 import { consume } from "../lib/rate-limit";
 import { AuthError, ExternalServiceError, ValidationError } from "../lib/errors";
@@ -81,7 +81,7 @@ export async function requestOtp(phoneE164: string): Promise<RequestOtpResult> {
     `Nuru: Your verification code is ${code}. Expires in 10 minutes. Never share this code.`,
   ).catch((e) => logger.error({ err: e }, "otp sms failed"));
 
-  const devCode = process.env.NODE_ENV !== "production" && !process.env.AT_API_KEY ? code : undefined;
+  const devCode = process.env.NODE_ENV !== "production" && !isSmsConfigured() ? code : undefined;
   return { expiresAt: expiresAt.toISOString(), devCode };
 }
 

@@ -76,7 +76,7 @@ See `.env.example` for the full list. The critical ones:
 - `MPESA_CONSUMER_KEY` / `MPESA_CONSUMER_SECRET` — Daraja sandbox
 - `MPESA_PASSKEY` / `MPESA_SHORTCODE` — Daraja STK push
 - `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` — Cloudflare R2
-- `AT_API_KEY` / `AT_USERNAME` — Africa's Talking SMS
+- `ONFON_API_KEY` / `ONFON_CLIENT_ID` / `ONFON_ACCESS_KEY` — Onfon/SwiftAlert SMS
 
 ## License
 

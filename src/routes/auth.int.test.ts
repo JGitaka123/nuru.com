@@ -21,7 +21,13 @@ describe.skipIf(skip)("auth integration", () => {
 
   beforeAll(async () => {
     process.env.JWT_SECRET ??= "integration-secret-must-be-at-least-32-chars";
-    process.env.AT_API_KEY = "";   // force devCode path
+    process.env.AT_API_KEY = "";   // force devCode path with no SMS provider
+    process.env.ONFON_API_KEY = "";
+    process.env.ONFON_CLIENT_ID = "";
+    process.env.ONFON_ACCESS_KEY = "";
+    process.env.SWIFTALERT_API_KEY = "";
+    process.env.SWIFTALERT_CLIENT_ID = "";
+    process.env.SWIFTALERT_ACCESS_KEY = "";
     process.env.RESEND_API_KEY = ""; // force devCode path
     prisma = new PrismaClient();
     app = Fastify();
