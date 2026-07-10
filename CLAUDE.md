@@ -19,7 +19,7 @@ Parklands).
 - **Cache/Queue:** Redis (Upstash in prod), BullMQ for jobs
 - **Storage:** Cloudflare R2 with R2 Image Resizing for thumbs
 - **Payments:** Safaricom Daraja API 3.0 (M-Pesa) — direct, not via aggregator
-- **Comms:** Africa's Talking SMS, WhatsApp Business API, Resend email
+- **Comms:** Onfon/SwiftAlert SMS, WhatsApp Business API, Resend email
 - **Auth:** Phone-OTP first (most Kenyans don't email-verify)
 - **AI:** Claude API for reasoning, self-hosted bge-m3 for embeddings,
   faster-whisper for voice. See `src/ai/router.ts` for routing rules.
@@ -85,8 +85,8 @@ comment above the call.
 - M-Pesa transaction limits: 1 KES min, 250,000 KES max per transaction
   (as of 2026). Daily limit 500K. Validate before STK push.
 - Daraja sandbox is flaky after 6pm EAT. Schedule tests in the morning.
-- SMS sender ID: must be pre-registered with Africa's Talking. "NURU"
-  takes ~3 days to approve. Use sandbox alphanumeric until then.
+- SMS sender ID: must be pre-registered with Onfon/SwiftAlert. "NURU"
+  may require provider approval before production traffic.
 
 ## What's done
 
@@ -196,7 +196,7 @@ comment above the call.
       (PostGIS via raw SQL, GiST index migration), returned from listing
       detail + search; agent map-pin picker on /agent/new; real pins in
       MapView and a Location map on listing detail
-- [ ] Approve "NURU" sender ID with Africa's Talking (3 days lead time)
+- [ ] Approve "NURU" sender ID with Onfon/SwiftAlert
 - [ ] Approve Daraja B2C production access (~3 weeks lead time)
 - [ ] Verify Meta Business + WhatsApp display name (~1-2 weeks lead time)
 - [ ] Register with ODPC (Kenya Data Protection) (~30 days lead time)

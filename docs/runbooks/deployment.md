@@ -112,7 +112,7 @@ Do not roll back the database; migrations are forward-only.
 | `ANTHROPIC_API_KEY` | If leaked | Anthropic console → Revoke, generate new |
 | `MPESA_*` | If leaked | Daraja portal → Reset; rotate B2C credential |
 | `R2_*` | Quarterly | Cloudflare → R2 → Tokens → Rotate |
-| `AT_API_KEY` | If leaked | AT dashboard → API Keys → Regenerate |
+| `ONFON_*` / `SWIFTALERT_*` | If leaked | SwiftAlert/Onfon dashboard → regenerate API credentials |
 | `WHATSAPP_ACCESS_TOKEN` | If permanent token leaks, regenerate via Meta Business |
 
 ## Monitoring
@@ -133,7 +133,7 @@ Do not roll back the database; migrations are forward-only.
 |---|---|---|
 | 502 on `/health` | API process died on boot | Check `journalctl -u nuru-api`; usually missing env var |
 | Migrations hang | Pooled URL used | Switch to `DIRECT_URL` |
-| OTP requests succeed but no SMS | `AT_SENDER_ID=NURU` but not approved | Either wait for approval or unset to use sandbox |
+| OTP requests succeed but no SMS | `ONFON_SENDER_ID=NURU` not approved, or Onfon credentials missing | Approve sender ID and verify `ONFON_API_KEY`, `ONFON_CLIENT_ID`, `ONFON_ACCESS_KEY` |
 | STK push 401 | Daraja access token expired | We refresh 5 min early — if persistent, rotate consumer key |
 | B2C "Initiator information is invalid" | Security credential generated against wrong env's cert | Regenerate against the matching env's cert |
 | Workers not picking up jobs | Wrong `REDIS_URL` or queue name mismatch | Check `src/workers/queues.ts` matches API |
@@ -146,16 +146,17 @@ Do not roll back the database; migrations are forward-only.
 - Sandbox callbacks come from a different IP range than prod — make sure
   your WAF doesn't block them.
 
-## Africa's Talking quirks
+## Onfon / SwiftAlert SMS quirks
 
-- Sandbox messages reach real numbers in Kenya — be careful with test data.
-- Sender ID approval is country-specific. "NURU" approved in KE doesn't
-  cover TZ/UG.
+- API auth uses `ApiKey` + `ClientId` in the JSON body and `AccessKey` as
+  a header; the portal username/password is not an app secret.
+- Sender ID approval is country-specific. "NURU" approved in KE does not
+  necessarily cover TZ/UG.
 
 ## Downtime windows
 
 - **Daraja maintenance**: usually Saturdays 22:00-02:00 EAT. Watch
   <https://developer.safaricom.co.ke/> for advisories.
-- **Africa's Talking maintenance**: announced via dashboard.
+- **Onfon / SwiftAlert maintenance**: announced via dashboard/support.
 - **Schedule our own deploys** outside Friday 17:00–Monday 06:00 EAT to
   avoid weekend incidents with no team on-call.

@@ -64,30 +64,37 @@ the developer needs to complete before going live. Most items have lead times
 
 ---
 
-## 3. Africa's Talking (SMS) — required, ~3 days for sender ID
+## 3. Onfon / SwiftAlert (SMS) — required
 
-### Sandbox (same day)
-- Sign up at <https://account.africastalking.com>
-- Note your sandbox API key + username (`sandbox`).
-- Set env:
-  ```
-  AT_USERNAME=sandbox
-  AT_API_KEY=...
-  AT_SENDER_ID=        # leave blank in sandbox
-  ```
-- Sandbox sends from a generic alphanumeric ID; messages reach real numbers.
+Primary SMS delivery is through Onfon Media / SwiftAlert:
 
-### Production
-1. Top up live account credit (~5,000 KES gets you started).
-2. **Apply for sender ID "NURU"**:
-   - Dashboard → SMS → Sender IDs → Apply.
-   - Justification: "Rental marketplace SMS notifications + OTP."
-   - Approval takes ~3 business days. Each subsequent country adds days.
-3. Once approved, set `AT_USERNAME=<your-live-username>`,
-   `AT_API_KEY=<live-key>`, `AT_SENDER_ID=NURU`.
-4. **Pre-register OTP message templates** if you want to bypass spam filters
-   on the bulk SMS gateway. Template:
-   `Nuru: Your verification code is {code}. Expires in 10 minutes. Never share this code.`
+- Portal: <https://sms.swiftalertsolutions.co.ke/>
+- API docs: <https://www.docs.onfonmedia.co.ke/>
+- Send endpoint: `https://api.onfonmedia.co.ke/v1/sms/SendBulkSMS`
+
+Do not put the portal username/password in app env. Generate/copy the API
+credentials from the dashboard and set:
+
+```
+SMS_PROVIDER=onfon
+ONFON_API_KEY=...
+ONFON_CLIENT_ID=...
+ONFON_ACCESS_KEY=...
+ONFON_SENDER_ID=NURU
+ONFON_BASE_URL=https://api.onfonmedia.co.ke/v1/sms
+```
+
+The runtime also accepts `SWIFTALERT_API_KEY`, `SWIFTALERT_CLIENT_ID`,
+`SWIFTALERT_ACCESS_KEY`, `SWIFTALERT_SENDER_ID`, and `SWIFTALERT_BASE_URL`
+as aliases.
+
+Register/approve sender ID `NURU` before setting it in production. Pre-register
+the OTP wording if the provider supports templates:
+`Nuru: Your verification code is {code}. Expires in 10 minutes. Never share this code.`
+
+Africa's Talking remains supported as a fallback by setting
+`SMS_PROVIDER=africas-talking` with `AT_USERNAME`, `AT_API_KEY`, and
+`AT_SENDER_ID`.
 
 ---
 
