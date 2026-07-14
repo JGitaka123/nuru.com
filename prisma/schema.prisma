@@ -176,6 +176,7 @@ model Listing {
   aiPriceHigh     Int?            // estimated fair rent high
   fraudScore      Int             @default(0)  // 0-100, higher = riskier
   fraudFlags      String[]        // ["watermark_detected", "price_anomaly", ...]
+  fraudScoredAt   DateTime?       // last fraud rescore; drives nightly staleness
 
   // Embedding for semantic search (1024-dim from bge-m3)
   embedding       Unsupported("vector(1024)")?

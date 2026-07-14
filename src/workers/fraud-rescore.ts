@@ -23,12 +23,20 @@ export function startFraudRescoreWorker() {
   const worker = new BullWorker<FraudRescoreJob>(
     "fraud-rescore",
     async (job) => {
+      // Nightly (null listingId): rescore listings not scored in the last
+      // 24h, oldest first, so coverage rotates through the whole catalog
+      // instead of re-scoring an arbitrary fixed 200 every night.
+      const staleBefore = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const ids = job.data.listingId
         ? [job.data.listingId]
         : (await prisma.listing.findMany({
-            where: { status: { in: ["ACTIVE", "PENDING_REVIEW"] } },
+            where: {
+              status: { in: ["ACTIVE", "PENDING_REVIEW"] },
+              OR: [{ fraudScoredAt: null }, { fraudScoredAt: { lt: staleBefore } }],
+            },
             select: { id: true },
-            take: 200,
+            orderBy: { fraudScoredAt: { sort: "asc", nulls: "first" } },
+            take: 500,
           })).map((l) => l.id);
 
       for (const id of ids) {
@@ -87,6 +95,7 @@ async function rescoreOne(listingId: string) {
     data: {
       fraudScore: fraud.content.score,
       fraudFlags: fraud.content.flags,
+      fraudScoredAt: new Date(),
       // Auto-hide if recommendation is hide/remove. Admin can revive.
       ...(fraud.content.recommendation === "hide" || fraud.content.recommendation === "remove"
         ? { status: "PENDING_REVIEW" as const }

@@ -14,15 +14,14 @@ export default function ImageGallery({ keys, alt }: { keys: string[]; alt: strin
   const startX = useRef<number | null>(null);
 
   const safeKeys = keys.filter(Boolean);
-  if (safeKeys.length === 0) {
-    return <div className="flex aspect-[16/10] w-full items-center justify-center rounded-xl bg-ink-100 text-ink-400">No photo</div>;
-  }
-  const url = photoUrl(safeKeys[idx])!;
 
-  function next() { setIdx((i) => (i + 1) % safeKeys.length); }
-  function prev() { setIdx((i) => (i - 1 + safeKeys.length) % safeKeys.length); }
+  function next() { setIdx((i) => (i + 1) % Math.max(1, safeKeys.length)); }
+  function prev() { setIdx((i) => (i - 1 + safeKeys.length) % Math.max(1, safeKeys.length)); }
 
+  // Hook must run unconditionally — keep it above any early return so the
+  // hook order is stable if `keys` flips between empty and non-empty.
   useEffect(() => {
+    if (safeKeys.length === 0) return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "ArrowRight") next();
       if (e.key === "ArrowLeft") prev();
@@ -31,6 +30,11 @@ export default function ImageGallery({ keys, alt }: { keys: string[]; alt: strin
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [safeKeys.length]);
+
+  if (safeKeys.length === 0) {
+    return <div className="flex aspect-[16/10] w-full items-center justify-center rounded-xl bg-ink-100 text-ink-400">No photo</div>;
+  }
+  const url = photoUrl(safeKeys[idx])!;
 
   return (
     <div className="space-y-3">

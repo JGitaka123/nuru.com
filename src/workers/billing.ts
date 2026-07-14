@@ -12,6 +12,8 @@ import { redis, type BillingJob } from "./queues";
 import { chargeInvoice, rolloverPeriod } from "../services/billing";
 import { isFreeLaunch, freeLaunchUntil } from "../services/plans";
 
+const MAX_BILLING_RETRIES = 3;
+
 export function startBillingWorker() {
   const worker = new BullWorker<BillingJob>(
     "billing",
@@ -41,12 +43,36 @@ export function startBillingWorker() {
         );
       }
 
-      // 2. Mark FAILED 3-strike invoices as VOID + flip subscription.
-      const dead = await prisma.invoice.updateMany({
-        where: { status: "FAILED", attempts: { gte: 3 } },
-        data: { status: "VOID" },
+      // 2. Mark FAILED 3-strike invoices as VOID and suspend their
+      // subscriptions. Both failure modes (declined callback and STK
+      // send-error) reach 3 attempts here, so this is the single place
+      // that guarantees a non-paying subscription actually loses access —
+      // otherwise it stays PAST_DUE (ungated) and is never re-invoiced.
+      const deadInvoices = await prisma.invoice.findMany({
+        where: { status: "FAILED", attempts: { gte: MAX_BILLING_RETRIES } },
+        select: { id: true, subscription: { select: { id: true, userId: true } } },
+        take: 200,
       });
-      if (dead.count > 0) logger.info({ count: dead.count }, "billing: voided dead invoices");
+      if (deadInvoices.length > 0) {
+        const subIds = [...new Set(deadInvoices.map((i) => i.subscription.id))];
+        const userIds = [...new Set(deadInvoices.map((i) => i.subscription.userId))];
+        await prisma.$transaction([
+          prisma.invoice.updateMany({
+            where: { id: { in: deadInvoices.map((i) => i.id) } },
+            data: { status: "VOID" },
+          }),
+          prisma.subscription.updateMany({
+            where: { id: { in: subIds }, status: { notIn: ["CANCELED", "EXPIRED"] } },
+            data: { status: "PAUSED" },
+          }),
+          // Pause the agents' live listings while suspended.
+          prisma.listing.updateMany({
+            where: { agentId: { in: userIds }, status: { in: ["ACTIVE", "PENDING_REVIEW"] } },
+            data: { status: "PAUSED" },
+          }),
+        ]);
+        logger.info({ count: deadInvoices.length, subs: subIds.length }, "billing: voided dead invoices + suspended subs");
+      }
 
       // 3. Roll over subscriptions whose currentPeriodEnd is <=24h away.
       const horizon = new Date(now.getTime() + 24 * 3600 * 1000);

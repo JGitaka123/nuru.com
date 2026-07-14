@@ -80,6 +80,7 @@ export function startListingEnrichmentWorker(): Worker<ListingEnrichmentJob> {
           aiPriceHigh: draft.content.estimatedRentKesHigh * 100,
           fraudScore: fraud.content.score,
           fraudFlags: fraud.content.flags,
+          fraudScoredAt: new Date(),
         },
       });
 

@@ -14,7 +14,16 @@ export const redis = new IORedis(REDIS_URL, {
   maxRetriesPerRequest: null,
 });
 
-const baseOpts = { connection: redis };
+// removeOnComplete frees a job's jobId once it finishes. Without it,
+// BullMQ retains completed jobs and a re-`add` with the same jobId is a
+// silent no-op — which blocked re-queuing an agent-task after an admin
+// re-opened it (jobId `exec:<taskId>` was still held by the prior run).
+// Keeping a bounded tail of failed jobs aids debugging without unbounded
+// Redis growth.
+const baseOpts = {
+  connection: redis,
+  defaultJobOptions: { removeOnComplete: true, removeOnFail: 500 },
+};
 
 export interface ListingEnrichmentJob {
   listingId: string;
