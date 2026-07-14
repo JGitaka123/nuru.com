@@ -10,6 +10,7 @@
  */
 
 import { prisma } from "../db/client";
+import { addMonths } from "../lib/dates";
 import { NotFoundError, ValidationError } from "../lib/errors";
 import { buildDarajaFromEnv } from "./mpesa";
 import { recordEvent } from "./events";
@@ -48,15 +49,24 @@ export async function chargeInvoice(invoiceId: string): Promise<{ status: "stk_s
     accountReference: `NS-${invoice.id.slice(0, 9)}`,
     description: `Nuru ${invoice.subscription.plan.name}`,
   }).catch(async (err) => {
-    await prisma.invoice.update({
-      where: { id: invoice.id },
-      data: {
-        status: "FAILED",
-        attempts: { increment: 1 },
-        lastAttemptAt: new Date(),
-        failedReason: err instanceof Error ? err.message.slice(0, 500) : "stk_push failed",
-      },
-    });
+    // STK never reached the user (Daraja down/timeout): no callback will
+    // arrive, so count the failure here — otherwise send-errors never
+    // advance failedAttempts and the subscription can never be suspended.
+    await prisma.$transaction([
+      prisma.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          status: "FAILED",
+          attempts: { increment: 1 },
+          lastAttemptAt: new Date(),
+          failedReason: err instanceof Error ? err.message.slice(0, 500) : "stk_push failed",
+        },
+      }),
+      prisma.subscription.update({
+        where: { id: invoice.subscriptionId },
+        data: { failedAttempts: { increment: 1 } },
+      }),
+    ]);
     throw err;
   });
 
@@ -106,7 +116,14 @@ export async function handleSubscriptionStkCallback(merchantRequestId: string, p
   });
   if (!invoice) return false;     // not a subscription invoice
 
-  if (invoice.status === "PAID") return true;   // duplicate
+  // Idempotency: we only act on a callback while the invoice is awaiting
+  // one (PROCESSING). Any other state means this callback is a duplicate
+  // (Daraja retries callbacks) or stale — PAID/FAILED were already
+  // recorded, VOID was written off, OPEN was never charged. Acking without
+  // re-processing prevents duplicate failure callbacks from inflating
+  // failedAttempts (which drives auto-suspension) and stops a late success
+  // from resurrecting a voided invoice.
+  if (invoice.status !== "PROCESSING") return true;
 
   if (payload.resultCode === 0 && payload.mpesaReceiptNumber) {
     const now = new Date();
@@ -181,8 +198,7 @@ export async function rolloverPeriod(subscriptionId: string): Promise<void> {
     return;
   }
   const periodStart = sub.currentPeriodEnd;
-  const periodEnd = new Date(periodStart);
-  periodEnd.setMonth(periodEnd.getMonth() + 1);
+  const periodEnd = addMonths(periodStart, 1);
   await prisma.$transaction([
     prisma.subscription.update({
       where: { id: subscriptionId },

@@ -161,9 +161,28 @@ export async function decideApplication(
     return updated;
   }
 
+  // One unit, one tenant: block approving a second applicant once any
+  // application for this listing is already approved (each approval spawns
+  // a lease + deposit; two would double-book the unit and trap a deposit).
+  const alreadyApproved = await prisma.application.findFirst({
+    where: { listingId: app.listing.id, status: "APPROVED", id: { not: applicationId } },
+    select: { id: true },
+  });
+  if (alreadyApproved) {
+    throw new ConflictError("Another applicant has already been approved for this listing");
+  }
+
   // Approval triggers Lease creation in PENDING_DEPOSIT state.
   const startDate = new Date();
   const updated = await prisma.$transaction(async (tx) => {
+    // Re-check inside the transaction to close the approve-approve race.
+    const raced = await tx.application.findFirst({
+      where: { listingId: app.listing.id, status: "APPROVED", id: { not: applicationId } },
+      select: { id: true },
+    });
+    if (raced) {
+      throw new ConflictError("Another applicant has already been approved for this listing");
+    }
     const u = await tx.application.update({
       where: { id: applicationId },
       data: { status: "APPROVED", decidedAt: new Date() },

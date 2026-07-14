@@ -82,6 +82,9 @@ export interface SearchResult {
     rent_kes_cents: number;
     primary_photo_key: string | null;
     description: string;
+    verification_status?: string;
+    lat?: number | null;
+    lng?: number | null;
     relevance: number;
   }>;
   clarifyingQuestion: string | null;

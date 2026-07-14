@@ -23,8 +23,14 @@ export function startSearchAlertWorker() {
       const listing = await prisma.listing.findUnique({ where: { id: listingId } });
       if (!listing || listing.status !== "ACTIVE" || !listing.publishedAt) return;
 
+      // Evaluate EVERY active saved search against this newly-published
+      // listing. Each listing fires exactly one alert job (deduped by
+      // jobId `alert:<id>`, no retries), so there is nothing to re-test —
+      // and a per-search `lastSeenAt < publishedAt` watermark silently
+      // dropped matches whenever listings were processed out of
+      // publishedAt order (concurrency: 4 gives no ordering guarantee).
       const candidates = await prisma.savedSearch.findMany({
-        where: { isActive: true, lastSeenAt: { lt: listing.publishedAt } },
+        where: { isActive: true },
         take: 1000,
       });
 
@@ -40,11 +46,6 @@ export function startSearchAlertWorker() {
           publishedAt: listing.publishedAt,
           primaryPhotoKey: listing.primaryPhotoKey,
         })) {
-          // Bump lastSeenAt so we don't re-test it next time.
-          await prisma.savedSearch.update({
-            where: { id: ss.id },
-            data: { lastSeenAt: listing.publishedAt },
-          });
           continue;
         }
 
@@ -54,7 +55,7 @@ export function startSearchAlertWorker() {
 
         await prisma.savedSearch.update({
           where: { id: ss.id },
-          data: { lastSeenAt: listing.publishedAt, lastMatchAt: new Date() },
+          data: { lastSeenAt: new Date(), lastMatchAt: new Date() },
         });
         matched++;
       }

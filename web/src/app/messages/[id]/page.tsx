@@ -42,7 +42,12 @@ export default function MessageThreadPage({ params }: { params: { id: string } }
   useEffect(() => {
     const token = getToken();
     if (!token) return;
-    const url = `${API_BASE}/v1/conversations/${id}/stream`;
+    // When NEXT_PUBLIC_API_URL is unset (dev), reach the API through the
+    // Next `/api/*` rewrite like the api() client does; otherwise hit the
+    // API host directly. Without the `/api` prefix the dev stream 404s.
+    const url = API_BASE
+      ? `${API_BASE}/v1/conversations/${id}/stream`
+      : `/api/v1/conversations/${id}/stream`;
     // EventSource doesn't allow custom headers; pass token in querystring.
     // (For production: use fetch+ReadableStream or a small wrapper.)
     const es = new EventSource(`${url}?_t=${encodeURIComponent(token)}`);

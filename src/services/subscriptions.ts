@@ -15,6 +15,7 @@
 import { z } from "zod";
 import type { Subscription } from "@prisma/client";
 import { prisma } from "../db/client";
+import { addMonths } from "../lib/dates";
 import { ConflictError, NotFoundError, ValidationError } from "../lib/errors";
 import { planFor, effectivePlan, freeLaunchUntil, isFreeLaunch, type PlanFeatures } from "./plans";
 import { logger } from "../lib/logger";
@@ -150,10 +151,9 @@ export async function changePlan(userId: string, input: z.infer<typeof ChangePla
     }
   }
 
-  const periodEnd = new Date(now);
   // freeMonths skip the first charge entirely.
   const freeMonths = promo?.freeMonths ?? 0;
-  periodEnd.setMonth(periodEnd.getMonth() + 1 + freeMonths);
+  const periodEnd = addMonths(now, 1 + freeMonths);
 
   const updated = await prisma.$transaction(async (tx) => {
     const next = await tx.subscription.update({

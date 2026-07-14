@@ -26,6 +26,9 @@ function SearchPageInner() {
 
   useEffect(() => {
     if (!q) {
+      // Clear any prior search so results don't linger above the browse grid.
+      setData(null);
+      setError(null);
       setLoading(true);
       api<{ items: Listing[] }>("/v1/listings?limit=12", { auth: false })
         .then((r) => setBrowse(r.items))
@@ -33,6 +36,7 @@ function SearchPageInner() {
         .finally(() => setLoading(false));
       return;
     }
+    setBrowse(null);
     setLoading(true);
     setError(null);
     api<SearchResult>(`/v1/search?q=${encodeURIComponent(q)}&limit=20`, { auth: false })
@@ -264,5 +268,6 @@ function fromSearchResult(result: SearchResult["results"][number]): ListingCardI
     rentKesCents: result.rent_kes_cents,
     primaryPhotoKey: result.primary_photo_key,
     description: result.description,
+    verificationStatus: result.verification_status,
   };
 }
