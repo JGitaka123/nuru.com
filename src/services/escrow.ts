@@ -18,7 +18,7 @@ import { buildDarajaFromEnv, type StkCallbackPayload } from "./mpesa";
 import { logger } from "../lib/logger";
 import { sendSms } from "./notifications";
 import { escrowReleaseQueue } from "../workers/queues";
-import { ConflictError, NotFoundError } from "../lib/errors";
+import { ConflictError, ExternalServiceError, NotFoundError } from "../lib/errors";
 import { recordEvent } from "./events";
 
 export interface InitiateDepositInput {
@@ -55,12 +55,20 @@ export async function initiateDeposit(input: InitiateDepositInput) {
   const daraja = buildDarajaFromEnv();
   const amountKes = Math.round(input.depositKesCents / 100);
 
-  const stk = await daraja.stkPush({
-    phoneE164: input.tenantPhoneE164,
-    amountKes,
-    accountReference: escrow.id.slice(0, 12),
-    description: "Nuru deposit",
-  });
+  // Map any Daraja failure (missing creds, expired token, Safaricom 5xx,
+  // timeout) to a typed 502 so the tenant sees a clear "try again" instead
+  // of an opaque 500 mid-payment. The escrow row stays PENDING for retry.
+  const stk = await daraja
+    .stkPush({
+      phoneE164: input.tenantPhoneE164,
+      amountKes,
+      accountReference: escrow.id.slice(0, 12),
+      description: "Nuru deposit",
+    })
+    .catch((err) => {
+      logger.error({ err, leaseId: input.leaseId, escrowId: escrow.id }, "deposit STK push failed");
+      throw new ExternalServiceError("M-Pesa", err);
+    });
 
   await prisma.escrow.update({
     where: { id: escrow.id },
