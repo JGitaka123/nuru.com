@@ -11,7 +11,7 @@
 
 import { prisma } from "../db/client";
 import { addMonths } from "../lib/dates";
-import { NotFoundError, ValidationError } from "../lib/errors";
+import { ExternalServiceError, NotFoundError, ValidationError } from "../lib/errors";
 import { buildDarajaFromEnv } from "./mpesa";
 import { recordEvent } from "./events";
 import { sendSms } from "./notifications";
@@ -67,7 +67,9 @@ export async function chargeInvoice(invoiceId: string): Promise<{ status: "stk_s
         data: { failedAttempts: { increment: 1 } },
       }),
     ]);
-    throw err;
+    // Typed error so the /v1/billing/retry route returns a 502 (not a raw
+    // 500). The worker path catches and logs it either way.
+    throw new ExternalServiceError("M-Pesa", err);
   });
 
   await prisma.invoice.update({
