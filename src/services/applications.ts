@@ -41,6 +41,10 @@ export async function submitApplication(tenantId: string, input: z.infer<typeof 
   const listing = await prisma.listing.findUnique({ where: { id: data.listingId } });
   if (!listing) throw new NotFoundError("Listing");
   if (listing.status !== "ACTIVE") throw new ConflictError(`Listing is ${listing.status}`);
+  // Sale listings are contact-only — no rental application / lease / escrow.
+  if (listing.listingType === "SALE") {
+    throw new ConflictError("This is a property for sale — contact the agent to arrange a viewing");
+  }
   if (listing.agentId === tenantId) throw new ConflictError("You can't apply to your own listing");
 
   const existing = await prisma.application.findFirst({

@@ -10,12 +10,13 @@ import { toast } from "@/components/Toast";
 import { useI18n } from "@/lib/i18n";
 import ListingResultCard, { type ListingCardItem } from "@/components/ListingResultCard";
 
-const BROWSE_NEIGHBORHOODS = ["Kilimani", "Westlands", "Kileleshwa", "Lavington", "Parklands"];
+const BROWSE_NEIGHBORHOODS = ["Kilimani", "Westlands", "Kileleshwa", "Lavington", "Parklands", "Karen"];
 
 function SearchPageInner() {
   const { t } = useI18n();
   const params = useSearchParams();
   const q = params.get("q") ?? "";
+  const mode: "RENT" | "SALE" = params.get("type") === "SALE" ? "SALE" : "RENT";
 
   const [data, setData] = useState<SearchResult | null>(null);
   const [browse, setBrowse] = useState<Listing[] | null>(null);
@@ -26,11 +27,10 @@ function SearchPageInner() {
 
   useEffect(() => {
     if (!q) {
-      // Clear any prior search so results don't linger above the browse grid.
       setData(null);
       setError(null);
       setLoading(true);
-      api<{ items: Listing[] }>("/v1/listings?limit=12", { auth: false })
+      api<{ items: Listing[] }>(`/v1/listings?limit=12&listingType=${mode}`, { auth: false })
         .then((r) => setBrowse(r.items))
         .catch(() => setBrowse([]))
         .finally(() => setLoading(false));
@@ -43,7 +43,7 @@ function SearchPageInner() {
       .then(setData)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [q]);
+  }, [q, mode]);
 
   async function saveSearch() {
     if (!getToken()) {
@@ -72,43 +72,43 @@ function SearchPageInner() {
     }
   }
 
+  const resultsAreSale = data?.filters?.listingType === "SALE";
+
   return (
-    <div className="space-y-6">
-      <section className="rounded-lg border border-ink-200 bg-surface p-4 shadow-sm">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p className="text-xs font-semibold uppercase text-brand-700">Rent in Nairobi</p>
-            <h1 className="text-2xl font-semibold">Find verified homes faster</h1>
-          </div>
-          <Link href="/agent" className="rounded-md border border-ink-300 px-3 py-2 text-sm font-semibold text-ink-700 hover:border-brand-300 hover:text-brand-700">
-            List a property
+    <div className="mx-auto max-w-5xl space-y-8">
+      {/* Search bar */}
+      <section className="rounded-2xl border border-ink-200 bg-surface p-5 shadow-card sm:p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <ModeToggle mode={mode} q={q} />
+          <Link href="/agent/new" className="text-sm font-medium text-ink-500 underline-offset-4 hover:text-ink-900 hover:underline">
+            List a property →
           </Link>
         </div>
-        <form className="flex flex-col gap-2 sm:flex-row">
-          <label htmlFor="search-query" className="sr-only">Search rentals</label>
+        <form className="flex flex-col gap-2.5 sm:flex-row">
+          <input type="hidden" name="type" value={mode} />
+          <label htmlFor="search-query" className="sr-only">Search homes</label>
           <input
             id="search-query"
             name="q"
             defaultValue={q}
             onChange={(e) => setQuery(e.target.value)}
-            className="min-h-12 flex-1 rounded-md border border-ink-200 bg-surface px-4 shadow-sm outline-none focus:border-brand-300 focus:ring-2 focus:ring-brand-100"
-            placeholder={t("search.placeholder")}
+            className="min-h-[3.25rem] flex-1 rounded-xl border border-ink-200 bg-ink-50/60 px-4 text-base outline-none transition focus:border-brand-400 focus:bg-surface focus:ring-4 focus:ring-brand-100"
+            placeholder={mode === "SALE" ? "3 bedroom house for sale in Lavington" : t("search.placeholder")}
           />
-          <button type="submit" className="min-h-12 rounded-md bg-brand-500 px-6 font-semibold text-white hover:bg-brand-600">
+          <button type="submit" className="min-h-[3.25rem] rounded-xl bg-ink-900 px-7 font-medium text-ink-50 transition hover:bg-ink-800">
             {t("home.search")}
           </button>
         </form>
       </section>
 
+      {/* Filter chips */}
       {data?.filters && (data.filters.neighborhoods.length > 0 || data.filters.rentMaxKes || data.filters.mustHave.length > 0) && (
         <div className="flex flex-wrap gap-2 text-sm">
           {data.filters.neighborhoods.map((n) => (
             <span key={n} className="rounded-full bg-brand-100 px-3 py-1 text-brand-800">{n}</span>
           ))}
           {data.filters.rentMaxKes && (
-            <span className="rounded-full bg-brand-100 px-3 py-1 text-brand-800">
-              Under KES {data.filters.rentMaxKes.toLocaleString()}
-            </span>
+            <span className="rounded-full bg-brand-100 px-3 py-1 text-brand-800">Under KES {data.filters.rentMaxKes.toLocaleString()}</span>
           )}
           {data.filters.mustHave.map((f) => (
             <span key={f} className="rounded-full bg-ink-100 px-3 py-1 text-ink-700">{f.replace(/_/g, " ")}</span>
@@ -117,7 +117,7 @@ function SearchPageInner() {
       )}
 
       {data?.clarifyingQuestion && (
-        <div className="rounded-lg bg-amber-50 p-4 text-amber-900 ring-1 ring-amber-200">
+        <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 text-brand-900 dark:bg-brand-900/20">
           <strong>{t("search.quickQuestion")}</strong> {data.clarifyingQuestion}
         </div>
       )}
@@ -126,111 +126,82 @@ function SearchPageInner() {
         <p className="text-xs text-ink-400">{t("search.degraded")}</p>
       )}
 
+      {/* Results header */}
       {data && data.results.length > 0 && (
-        <div className="flex flex-col justify-between gap-3 rounded-lg border border-ink-200 bg-surface p-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
-            <p className="text-lg font-semibold">
-              {data.results.length} {data.results.length === 1 ? t("search.matchOne") : t("search.matchMany")}
-            </p>
-            <p className="text-sm text-ink-500">Sorted by relevance, verification, and listing quality.</p>
+            <h1 className="font-serif text-2xl text-ink-900">
+              {data.results.length} {resultsAreSale ? "homes for sale" : "homes to rent"}
+            </h1>
+            <p className="mt-1 text-sm text-ink-500">Ranked by relevance, verification and quality.</p>
           </div>
           <div className="flex gap-2">
-            <button type="button" onClick={saveSearch} className="rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-100">
+            <button type="button" onClick={saveSearch} className="rounded-lg border border-ink-200 bg-surface px-3.5 py-2 text-sm font-medium text-ink-700 transition hover:border-ink-300">
               {t("search.saveSearch")}
             </button>
             <div className="inline-flex overflow-hidden rounded-lg border border-ink-200 bg-surface text-sm">
-              <button
-                type="button"
-                onClick={() => setView("list")}
-                aria-pressed={view === "list"}
-                className={`px-3 py-1.5 ${view === "list" ? "bg-ink-900 text-white" : "text-ink-700 hover:bg-ink-50"}`}
-              >
-                List
-              </button>
-              <button
-                type="button"
-                onClick={() => setView("map")}
-                aria-pressed={view === "map"}
-                className={`px-3 py-1.5 ${view === "map" ? "bg-ink-900 text-white" : "text-ink-700 hover:bg-ink-50"}`}
-              >
-                {t("search.map")}
-              </button>
+              <button type="button" onClick={() => setView("list")} aria-pressed={view === "list"}
+                className={`px-3.5 py-2 ${view === "list" ? "bg-ink-900 text-ink-50" : "text-ink-600 hover:bg-ink-100"}`}>List</button>
+              <button type="button" onClick={() => setView("map")} aria-pressed={view === "map"}
+                className={`px-3.5 py-2 ${view === "map" ? "bg-ink-900 text-ink-50" : "text-ink-600 hover:bg-ink-100"}`}>{t("search.map")}</button>
             </div>
           </div>
         </div>
       )}
 
       {loading && (
-        <div className="grid gap-4">
-          {Array.from({ length: 6 }).map((_, i) => <ListingCardSkeleton key={i} />)}
-        </div>
+        <div className="grid gap-5">{Array.from({ length: 5 }).map((_, i) => <ListingCardSkeleton key={i} />)}</div>
       )}
-      {error && <div className="rounded-lg bg-red-50 p-4 text-red-700 ring-1 ring-red-200">{error}</div>}
+      {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>}
 
       {data && data.results.length === 0 && !loading && (
-        <div className="rounded-lg border border-ink-200 bg-surface p-8 text-center">
-          <h2 className="text-xl font-semibold text-ink-900">No exact matches yet</h2>
-          <p className="mx-auto mt-2 max-w-xl text-ink-500">
-            Try expanding your area or budget, or save this search so Nuru can alert you when a matching verified home goes live.
-          </p>
-          <button type="button" onClick={saveSearch} className="mt-4 rounded-md bg-brand-500 px-4 py-2 font-semibold text-white hover:bg-brand-600">
-            Create alert
-          </button>
+        <div className="rounded-2xl border border-ink-200 bg-surface p-10 text-center shadow-card">
+          <h2 className="font-serif text-2xl text-ink-900">No exact matches yet</h2>
+          <p className="mx-auto mt-2 max-w-prose text-ink-500">{t("search.noMatches")}</p>
+          <button type="button" onClick={saveSearch} className="mt-5 rounded-xl bg-ink-900 px-5 py-2.5 font-medium text-ink-50 hover:bg-ink-800">Create an alert</button>
         </div>
       )}
 
+      {/* Browse (no query) */}
       {!q && !loading && (
-        <>
+        <div className="space-y-6">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-ink-500">{t("search.popularAreas")}</span>
             {BROWSE_NEIGHBORHOODS.map((n) => (
-              <Link
-                key={n}
-                href={`/search?q=${encodeURIComponent(n)}`}
-                className="rounded-full border border-ink-200 bg-surface px-3 py-1 text-sm text-ink-700 hover:border-brand-300 hover:text-brand-700"
-              >
-                {n}
-              </Link>
+              <Link key={n} href={`/search?q=${encodeURIComponent(n)}&type=${mode}`}
+                className="rounded-full border border-ink-200 bg-surface px-3.5 py-1.5 text-sm text-ink-700 transition hover:border-ink-300 hover:text-ink-900">{n}</Link>
             ))}
           </div>
           {browse && browse.length > 0 && (
             <>
-              <div>
-                <p className="text-sm font-semibold uppercase text-brand-700">Browse</p>
-                <h2 className="text-xl font-semibold">{t("search.recentListings")}</h2>
-              </div>
-              <div className="grid gap-4">
-                {browse.map((l) => <ListingResultCard key={l.id} item={fromListing(l)} />)}
-              </div>
+              <h2 className="font-serif text-2xl text-ink-900">{mode === "SALE" ? "Homes for sale" : t("search.recentListings")}</h2>
+              <div className="grid gap-5">{browse.map((l) => <ListingResultCard key={l.id} item={fromListing(l)} />)}</div>
             </>
           )}
           {browse && browse.length === 0 && (
-            <div className="rounded-lg border border-ink-200 bg-surface p-8 text-center">
-              <h2 className="text-xl font-semibold text-ink-900">Listings are being prepared</h2>
-              <p className="mx-auto mt-2 max-w-xl text-ink-500">
-                We are onboarding verified agents now. List the first property if you are an agent.
-              </p>
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
-                <Link href="/agent" className="rounded-md bg-brand-500 px-4 py-2 font-semibold text-white hover:bg-brand-600">
-                  List property
-                </Link>
-              </div>
+            <div className="rounded-2xl border border-ink-200 bg-surface p-10 text-center shadow-card">
+              <h2 className="font-serif text-2xl text-ink-900">{mode === "SALE" ? "No homes for sale yet" : t("search.noListings")}</h2>
+              <p className="mx-auto mt-2 max-w-prose text-ink-500">We are onboarding verified agents now.</p>
+              <Link href="/agent/new" className="mt-5 inline-block rounded-xl bg-ink-900 px-5 py-2.5 font-medium text-ink-50 hover:bg-ink-800">List a property</Link>
             </div>
           )}
-        </>
-      )}
-
-      {data && data.results.length > 0 && view === "map" && (
-        <MapView items={data.results} />
-      )}
-
-      {data && data.results.length > 0 && view === "list" && (
-        <div className="grid gap-4">
-          {data.results.map((r) => (
-            <ListingResultCard key={r.id} item={fromSearchResult(r)} />
-          ))}
         </div>
       )}
+
+      {data && data.results.length > 0 && view === "map" && <MapView items={data.results} />}
+      {data && data.results.length > 0 && view === "list" && (
+        <div className="grid gap-5">{data.results.map((r) => <ListingResultCard key={r.id} item={fromSearchResult(r)} />)}</div>
+      )}
+    </div>
+  );
+}
+
+function ModeToggle({ mode, q }: { mode: "RENT" | "SALE"; q: string }) {
+  const qs = (m: string) => `/search?${q ? `q=${encodeURIComponent(q)}&` : ""}type=${m}`;
+  return (
+    <div className="inline-flex rounded-full border border-ink-200 bg-ink-50 p-1 text-sm font-medium">
+      <Link href={qs("RENT")} className={`rounded-full px-4 py-1.5 transition ${mode === "RENT" ? "bg-ink-900 text-ink-50" : "text-ink-600 hover:text-ink-900"}`}>Rent</Link>
+      <Link href={qs("SALE")} className={`rounded-full px-4 py-1.5 transition ${mode === "SALE" ? "bg-ink-900 text-ink-50" : "text-ink-600 hover:text-ink-900"}`}>Buy</Link>
     </div>
   );
 }
@@ -251,6 +222,8 @@ function fromListing(listing: Listing): ListingCardItem {
     bedrooms: listing.bedrooms,
     bathrooms: listing.bathrooms,
     rentKesCents: listing.rentKesCents,
+    listingType: listing.listingType,
+    salePriceKes: listing.salePriceKes,
     primaryPhotoKey: listing.primaryPhotoKey,
     description: listing.description,
     estate: listing.estate,
@@ -266,6 +239,8 @@ function fromSearchResult(result: SearchResult["results"][number]): ListingCardI
     neighborhood: result.neighborhood,
     bedrooms: result.bedrooms,
     rentKesCents: result.rent_kes_cents,
+    listingType: result.listing_type,
+    salePriceKes: result.sale_price_kes,
     primaryPhotoKey: result.primary_photo_key,
     description: result.description,
     verificationStatus: result.verification_status,

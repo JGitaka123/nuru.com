@@ -65,6 +65,7 @@ export async function api<T = unknown>(path: string, opts: RequestOpts = {}): Pr
 
 export interface SearchResult {
   filters: {
+    listingType?: "RENT" | "SALE";
     neighborhoods: string[];
     bedroomsMin: number | null;
     bedroomsMax: number | null;
@@ -80,6 +81,8 @@ export interface SearchResult {
     neighborhood: string;
     bedrooms: number;
     rent_kes_cents: number;
+    sale_price_kes?: number | null;
+    listing_type?: "RENT" | "SALE";
     primary_photo_key: string | null;
     description: string;
     verification_status?: string;
@@ -100,6 +103,8 @@ export interface Listing {
   bedrooms: number;
   bathrooms: number;
   rentKesCents: number;
+  listingType?: "RENT" | "SALE";
+  salePriceKes?: number | null;
   depositMonths: number;
   features: string[];
   neighborhood: string;
