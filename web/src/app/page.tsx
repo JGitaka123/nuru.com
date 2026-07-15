@@ -3,17 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
+import { FEATURED_MARKETS } from "@/lib/locations";
 
-// Example queries stay verbatim; they show search accepts EN/Swahili/Sheng.
+// Example queries stay verbatim; they show search accepts EN/Swahili/Sheng
+// and span the country, not just Nairobi.
 const RENT_EXAMPLES = [
   "2BR Kilimani under 60K with parking",
-  "natafuta keja Kile na pet zangu, around 80k",
-  "quiet family-friendly Lavington max 120k",
+  "2 bedroom Nyali Mombasa near the beach",
+  "natafuta keja Milimani Nakuru, around 40k",
 ];
 const SALE_EXAMPLES = [
   "4 bedroom house for sale in Lavington",
-  "3BR apartment to buy in Kilimani",
-  "land for sale in Karen",
+  "bungalow ya kununua Nakuru, 8M",
+  "3BR apartment to buy in Elgon View Eldoret",
 ];
 
 export default function HomePage() {
@@ -37,11 +39,11 @@ export default function HomePage() {
             Verified homes · M-Pesa escrow protection
           </div>
           <h1 className="max-w-3xl font-serif text-[2.75rem] font-semibold leading-[1.05] tracking-tightish text-white sm:text-6xl">
-            {mode === "SALE" ? "Own your next home in Nairobi." : t("home.heroTitle")}
+            {mode === "SALE" ? "Own your next home in Kenya." : t("home.heroTitle")}
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-8 text-white/85">
             {mode === "SALE"
-              ? "Browse verified homes for sale across Nairobi's best neighborhoods — no bait listings, no guesswork."
+              ? "Browse verified homes for sale in every county — from Nairobi and Mombasa to Nakuru, Kisumu and Eldoret. No bait listings, no guesswork."
               : t("home.heroSub")}
           </p>
 
@@ -90,7 +92,36 @@ export default function HomePage() {
         <div className="grid gap-px overflow-hidden rounded-2xl border border-ink-200 bg-ink-200 sm:grid-cols-3">
           <Feature eyebrow="Checked before publish" title={t("home.f1t")} body={t("home.f1b")} />
           <Feature eyebrow="No cash guesswork" title={t("home.f2t")} body={t("home.f2b")} />
-          <Feature eyebrow="Built for Nairobi" title={t("home.f3t")} body={t("home.f3b")} />
+          <Feature eyebrow="Built for Kenya" title={t("home.f3t")} body={t("home.f3b")} />
+        </div>
+      </section>
+
+      {/* Browse by location — national */}
+      <section className="mx-auto max-w-6xl px-1">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="font-sans text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">Nationwide</p>
+            <h2 className="mt-2 font-serif text-3xl leading-tight text-ink-900 sm:text-4xl">{t("home.browseTitle")}</h2>
+            <p className="mt-2 max-w-prose text-ink-600">{t("home.browseSub")}</p>
+          </div>
+          <Link href="/search" className="rounded-xl border border-ink-300 px-4 py-2.5 text-sm font-medium text-ink-800 transition hover:border-ink-400">
+            {t("home.browseAll")}
+          </Link>
+        </div>
+        <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURED_MARKETS.map((m) => (
+            <Link
+              key={m.name}
+              href={`/search?q=${encodeURIComponent(m.county)}`}
+              className="group flex items-center justify-between gap-3 rounded-2xl border border-ink-200 bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-lift"
+            >
+              <span className="min-w-0">
+                <span className="block font-serif text-xl text-ink-900">{m.name}</span>
+                <span className="mt-0.5 block truncate text-sm text-ink-500">{m.blurb}</span>
+              </span>
+              <span aria-hidden="true" className="text-brand-500 transition group-hover:translate-x-0.5">→</span>
+            </Link>
+          ))}
         </div>
       </section>
 

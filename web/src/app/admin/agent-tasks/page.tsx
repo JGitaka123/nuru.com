@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
 import { toast } from "@/components/Toast";
+import { PageHeading, AdminNav, btnBrand } from "@/components/ui";
 
 interface Task {
   id: string;
@@ -74,13 +74,16 @@ export default function AdminAgentTasksPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <Link href="/admin" className="text-sm text-ink-500 hover:underline">← Admin</Link>
-      <h1 className="text-3xl font-bold">Autonomous CRM tasks</h1>
-      <p className="text-ink-600">AI-drafted client-success messages awaiting human review (low-confidence) or already executed.</p>
+    <div className="space-y-8">
+      <PageHeading
+        eyebrow="Operations"
+        title="Autonomous CRM tasks"
+        subtitle="AI-drafted client-success messages awaiting human review (low-confidence) or already executed."
+      />
+      <AdminNav active="/admin/agent-tasks" />
 
       <div className="flex gap-2 text-sm">
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-lg border border-ink-200 bg-surface px-3 py-1.5">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-xl border border-ink-200 bg-surface px-3 py-2">
           {["REVIEW_NEEDED", "PENDING", "COMPLETED", "CANCELED"].map((s) => <option key={s}>{s}</option>)}
         </select>
       </div>
@@ -92,17 +95,17 @@ export default function AdminAgentTasksPage() {
       ) : (
         <ul className="space-y-3">
           {items.map((t) => (
-            <li key={t.id} className="rounded-xl border border-ink-200 bg-surface p-4">
+            <li key={t.id} className="rounded-2xl border border-ink-200 bg-surface p-5 shadow-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-semibold">{t.kind.replace(/_/g, " ").toLowerCase()}</p>
+                  <p className="font-serif text-lg capitalize text-ink-900">{t.kind.replace(/_/g, " ").toLowerCase()}</p>
                   <p className="text-xs text-ink-500">User {t.userId.slice(0, 10)}… · priority {t.priority}{t.aiConfidence !== null ? ` · confidence ${(t.aiConfidence * 100).toFixed(0)}%` : ""}</p>
                 </div>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[t.status]}`}>{t.status}</span>
+                <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGE[t.status]}`}>{t.status}</span>
               </div>
 
               {t.aiDraft && (
-                <div className="mt-3 space-y-2 rounded-lg bg-ink-50 p-3 text-sm">
+                <div className="mt-3 space-y-2 rounded-xl border border-ink-100 bg-ink-50 p-3 text-sm">
                   {t.aiDraft.emailSubject && (
                     <p><strong>Email subject:</strong> {t.aiDraft.emailSubject}</p>
                   )}
@@ -129,8 +132,8 @@ export default function AdminAgentTasksPage() {
 
               {t.status === "REVIEW_NEEDED" && (
                 <div className="mt-3 flex gap-2">
-                  <button onClick={() => approve(t)} className="rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600">Approve & send</button>
-                  <button onClick={() => cancel(t)} className="rounded-lg border border-red-300 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50">Cancel</button>
+                  <button onClick={() => approve(t)} className={btnBrand}>Approve & send</button>
+                  <button onClick={() => cancel(t)} className="rounded-xl border border-red-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50">Cancel</button>
                 </div>
               )}
             </li>

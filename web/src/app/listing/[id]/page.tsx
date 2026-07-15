@@ -73,7 +73,8 @@ export default function ListingPage({ params }: { params: { id: string } }) {
           </div>
           <h1 className="font-serif text-3xl leading-tight text-ink-900 sm:text-4xl">{listing.title}</h1>
           <p className="text-ink-500">
-            {listing.neighborhood}{listing.estate ? ` · ${listing.estate}` : ""} · {formatCategory(listing.category)}
+            {listing.neighborhood}{listing.estate ? ` · ${listing.estate}` : ""}
+            {listing.county && listing.county !== listing.neighborhood ? ` · ${listing.county}` : ""} · {formatCategory(listing.category)}
           </p>
         </div>
         <SaveButton listingId={listing.id} />
@@ -195,7 +196,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             address: {
               "@type": "PostalAddress",
               addressLocality: listing.neighborhood,
-              addressRegion: "Nairobi",
+              addressRegion: listing.county ?? "Kenya",
               addressCountry: "KE",
             },
             numberOfRooms: listing.bedrooms,

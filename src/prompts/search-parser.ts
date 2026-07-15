@@ -14,6 +14,7 @@
 
 import { z } from "zod";
 import { run, type RunResult } from "../ai/router";
+import { allSearchablePlaces, canonicalCounty, countyForArea } from "../lib/locations";
 
 export const SearchFiltersSchema = z.object({
   listingType: z.enum(["RENT", "SALE"]).default("RENT"),
@@ -45,15 +46,26 @@ export const SearchFiltersSchema = z.object({
 export type SearchFilters = z.infer<typeof SearchFiltersSchema>;
 
 const SYSTEM_PROMPT = `
-You parse rental search queries for Nuru.com, a Nairobi rental marketplace.
-Users may write in English, Swahili, Sheng, or a mix. Your job: extract
-structured filters and produce a semantic query string for vector search.
+You parse property search queries for Nuru.com, a nationwide Kenyan property
+marketplace (rentals and homes for sale, everywhere in Kenya — not just
+Nairobi). Users may write in English, Swahili, Sheng, or a mix. Your job:
+extract structured filters and produce a semantic query string for vector
+search.
 
-# Known neighborhoods (canonical names)
-Kilimani, Westlands, Kileleshwa, Lavington, Parklands, Karen, Runda, Spring
-Valley, Riverside, Hurlingham, Upperhill, South B, South C, Lang'ata,
-Donholm, Buruburu, Kasarani, Roysambu, Ruaka, Kikuyu, Ngong Road, Ngara,
-Pangani, Eastleigh.
+# Locations (anywhere in Kenya)
+Return whatever place the user names in "neighborhoods" — it may be an estate
+or area (Kilimani, Nyali, Milimani, Elgon View), a town (Thika, Naivasha,
+Ukunda), or a county/city (Nairobi, Mombasa, Kisumu, Nakuru, Eldoret,
+Machakos, Kiambu, Nyeri, Kilifi, ...). Use the canonical, correctly-cased
+name. Major markets and their areas:
+- Nairobi: Kilimani, Westlands, Kileleshwa, Lavington, Karen, Runda,
+  Parklands, Upperhill, South B/C, Lang'ata, Donholm, Kasarani, Ruaka, Embakasi.
+- Mombasa: Nyali, Bamburi, Shanzu, Kizingo, Tudor, Mtwapa, Likoni.
+- Kisumu: Milimani, Mamboleo, Riat, Nyalenda, Kondele.
+- Nakuru: Milimani, Section 58, Lanet, Naivasha, Gilgil.
+- Eldoret (Uasin Gishu): Elgon View, Kapsoya, Annex, Kimumu.
+- Kiambu: Thika, Ruiru, Juja, Kikuyu, Kiambu Town, Kitengela (Kajiado/Machakos).
+Do not restrict to this list — accept any Kenyan place the user names.
 
 # Slang / Sheng map (apply silently — never echo back)
 - Kile = Kileleshwa
@@ -69,7 +81,7 @@ Pangani, Eastleigh.
 - bei ya pango = rent price
 
 # Rules
-1. Map all neighborhoods to canonical English names.
+1. Map all locations to their canonical, correctly-cased names.
 2. "60K", "60k", "elfu sitini" all → 60000.
 3. If the user says "under X", set rentMaxKes = X.
 4. If they say "around X" or "X budget", set rentMaxKes = X * 1.1 (round up).
@@ -144,8 +156,28 @@ Query: "somewhere quiet for my family, near a good school, max 120k"
   "rentMaxKes": 120000, "rentMinKes": null, "category": null,
   "mustHave": [], "niceToHave": ["near_school"], "nearLandmarks": [],
   "semanticQuery": "quiet family-friendly residential area near schools",
-  "clarifyingQuestion": "Which area do you prefer — Lavington, Karen, Runda, or somewhere else?",
+  "clarifyingQuestion": "Which town or area are you looking in?",
   "detectedLanguage": "en"
+}
+
+Query: "2 bedroom in Nyali Mombasa near the beach, 70k"
+{
+  "listingType": "RENT",
+  "neighborhoods": ["Nyali"], "bedroomsMin": 2, "bedroomsMax": 2,
+  "rentMaxKes": 70000, "rentMinKes": null, "category": "TWO_BR",
+  "mustHave": [], "niceToHave": ["near_beach"], "nearLandmarks": ["beach"],
+  "semanticQuery": "two bedroom apartment near the beach",
+  "clarifyingQuestion": null, "detectedLanguage": "en"
+}
+
+Query: "bungalow ya kununua Nakuru, 8M"
+{
+  "listingType": "SALE",
+  "neighborhoods": ["Nakuru"], "bedroomsMin": null, "bedroomsMax": null,
+  "rentMaxKes": null, "rentMinKes": null, "category": null,
+  "mustHave": [], "niceToHave": [], "nearLandmarks": [],
+  "semanticQuery": "bungalow for sale",
+  "clarifyingQuestion": "How many bedrooms?", "detectedLanguage": "sheng"
 }
 `.trim();
 
@@ -162,17 +194,19 @@ export async function parseSearchQuery(query: string): Promise<RunResult<SearchF
   return { ...result, content: parsed };
 }
 
-// MVP neighborhoods + common aliases (Sheng/short forms included).
+// Sheng / short-form aliases the registry can't infer on its own.
 const NEIGHBORHOOD_ALIASES: Record<string, string> = {
-  kilimani: "Kilimani",
-  westlands: "Westlands",
   westy: "Westlands",
-  kileleshwa: "Kileleshwa",
   kile: "Kileleshwa",
-  lavington: "Lavington",
   lavi: "Lavington",
-  parklands: "Parklands",
+  rongai: "Ongata Rongai",
+  eldy: "Eldoret CBD",
+  nax: "Nakuru CBD",
 };
+
+// Every canonical Kenyan place (areas + counties), lowercased for matching.
+// Longest names first so "Nairobi CBD" wins over "Nairobi".
+const SEARCHABLE_PLACES: string[] = allSearchablePlaces().sort((a, b) => b.length - a.length);
 
 const FEATURE_KEYWORDS: Record<string, string> = {
   parking: "parking",
@@ -201,13 +235,25 @@ const FEATURE_KEYWORDS: Record<string, string> = {
 export function heuristicParseSearchQuery(query: string): SearchFilters {
   const q = query.toLowerCase();
 
-  const neighborhoods = [
-    ...new Set(
-      Object.entries(NEIGHBORHOOD_ALIASES)
-        .filter(([alias]) => new RegExp(`\\b${alias}\\b`, "i").test(q))
-        .map(([, canonical]) => canonical),
-    ),
-  ];
+  // Match canonical places from the national registry, plus Sheng aliases.
+  const matched = new Set<string>();
+  for (const place of SEARCHABLE_PLACES) {
+    // Escape regex metachars in place names (e.g. "Lang'ata", "South B").
+    const safe = place.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`\\b${safe}\\b`, "i").test(q)) matched.add(place);
+  }
+  for (const [alias, canonical] of Object.entries(NEIGHBORHOOD_ALIASES)) {
+    if (new RegExp(`\\b${alias}\\b`, "i").test(q)) matched.add(canonical);
+  }
+  // Drop a bare county match when a more specific area within it also matched
+  // (e.g. "Nyali Mombasa" → keep "Nyali", drop "Mombasa" so results narrow).
+  const all = [...matched];
+  const neighborhoods = all.filter((place) => {
+    const asCounty = canonicalCounty(place);
+    if (!asCounty) return true; // not a county name → always keep
+    const hasAreaInCounty = all.some((o) => o !== place && countyForArea(o) === asCounty);
+    return !hasAreaInCounty;
+  });
 
   // "2BR", "2 br", "2 bed(room)s", "three bedroom"
   let bedrooms: number | null = null;

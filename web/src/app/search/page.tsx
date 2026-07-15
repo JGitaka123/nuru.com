@@ -9,8 +9,9 @@ import { ListingCardSkeleton } from "@/components/Skeleton";
 import { toast } from "@/components/Toast";
 import { useI18n } from "@/lib/i18n";
 import ListingResultCard, { type ListingCardItem } from "@/components/ListingResultCard";
+import { FEATURED_MARKETS } from "@/lib/locations";
 
-const BROWSE_NEIGHBORHOODS = ["Kilimani", "Westlands", "Kileleshwa", "Lavington", "Parklands", "Karen"];
+const BROWSE_NEIGHBORHOODS = FEATURED_MARKETS.map((m) => m.name);
 
 function SearchPageInner() {
   const { t } = useI18n();
@@ -219,6 +220,7 @@ function fromListing(listing: Listing): ListingCardItem {
     id: listing.id,
     title: listing.title,
     neighborhood: listing.neighborhood,
+    county: listing.county,
     bedrooms: listing.bedrooms,
     bathrooms: listing.bathrooms,
     rentKesCents: listing.rentKesCents,

@@ -165,8 +165,10 @@ model Listing {
   serviceChargeKesCents Int       @default(0)
   features        String[]        // ["balcony", "borehole", "backup_generator", ...]
 
-  // Location
+  // Location — national. `neighborhood` is the primary free-text area/estate
+  // token; `county` groups it for national browse, filtering & market stats.
   neighborhood    String
+  county          String?
   estate          String?
   addressLine     String?
   // PostGIS geography(Point, 4326) — see packages/db/src/geo.ts for queries
@@ -207,6 +209,7 @@ model Listing {
   savedBy         SavedListing[]
 
   @@index([status, neighborhood])
+  @@index([status, county])
   @@index([rentKesCents])
   @@index([category, bedrooms])
   @@index([fraudScore])

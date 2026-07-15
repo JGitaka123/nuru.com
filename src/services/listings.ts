@@ -17,6 +17,7 @@ import type { ListingCategory, ListingStatus, UserRole } from "@prisma/client";
 import { prisma } from "../db/client";
 import { ForbiddenError, NotFoundError, ValidationError } from "../lib/errors";
 import { logger } from "../lib/logger";
+import { canonicalCounty, countyForArea } from "../lib/locations";
 import { recordEvent } from "./events";
 
 // Base field shapes, unrefined — the patch schema derives from this.
@@ -39,6 +40,9 @@ const ListingFields = z.object({
   serviceChargeKesCents: z.number().int().min(0).default(0),
   features: z.array(z.string()).default([]),
   neighborhood: z.string().min(2).max(80),
+  // County groups the listing nationally. Optional on input — derived from the
+  // neighborhood when the agent doesn't pick one (see resolveCounty).
+  county: z.string().min(2).max(60).optional(),
   estate: z.string().max(80).optional(),
   addressLine: z.string().max(200).optional(),
   photoKeys: z.array(z.string()).default([]),
@@ -59,11 +63,22 @@ export type ListingInput = z.infer<typeof ListingInputSchema>;
 export const ListingPatchSchema = ListingFields.partial();
 export type ListingPatch = z.infer<typeof ListingPatchSchema>;
 
+/**
+ * Resolve the county to store: prefer an explicit (canonicalised) county,
+ * else derive one from the free-text neighborhood. Returns undefined when we
+ * can't confidently map it — the listing still saves, just ungrouped.
+ */
+function resolveCounty(county: string | undefined, neighborhood: string): string | undefined {
+  if (county) return canonicalCounty(county) ?? county;
+  return countyForArea(neighborhood) ?? undefined;
+}
+
 export async function createListing(agentId: string, input: ListingInput) {
   const { lat, lng, ...data } = ListingInputSchema.parse(input);
   const listing = await prisma.listing.create({
     data: {
       ...data,
+      county: resolveCounty(data.county, data.neighborhood),
       agentId,
       status: "DRAFT",
     },
@@ -124,8 +139,12 @@ export async function updateListing(
   role: UserRole,
   patch: ListingPatch,
 ) {
-  await assertCanEdit(listingId, userId, role);
+  const existing = await assertCanEdit(listingId, userId, role);
   const { lat, lng, ...data } = ListingPatchSchema.parse(patch);
+  // Keep county consistent when the county or neighborhood changes.
+  if (data.county !== undefined || data.neighborhood !== undefined) {
+    data.county = resolveCounty(data.county, data.neighborhood ?? existing.neighborhood);
+  }
   const updated = await prisma.listing.update({ where: { id: listingId }, data });
   if (lat !== undefined && lng !== undefined) {
     await setListingLocation(listingId, lat, lng);
@@ -196,6 +215,7 @@ export async function listMyListings(agentId: string, status?: ListingStatus) {
 
 export interface PublicListingFilters {
   neighborhood?: string;
+  county?: string;
   category?: ListingCategory;
   listingType?: "RENT" | "SALE";
   bedroomsMin?: number;
@@ -207,11 +227,22 @@ export interface PublicListingFilters {
 
 export async function listPublicListings(filters: PublicListingFilters) {
   const limit = Math.min(filters.limit ?? 20, 50);
+  // A free-text location can be an area OR a county name — match either so
+  // "Nakuru" surfaces listings whose neighborhood is an area within Nakuru.
+  const locationWhere = filters.neighborhood
+    ? {
+        OR: [
+          { neighborhood: { equals: filters.neighborhood, mode: "insensitive" as const } },
+          { county: { equals: filters.neighborhood, mode: "insensitive" as const } },
+        ],
+      }
+    : {};
   return prisma.listing.findMany({
     where: {
       status: "ACTIVE",
       fraudScore: { lt: 60 },
-      ...(filters.neighborhood ? { neighborhood: filters.neighborhood } : {}),
+      ...locationWhere,
+      ...(filters.county ? { county: { equals: filters.county, mode: "insensitive" } } : {}),
       ...(filters.category ? { category: filters.category } : {}),
       listingType: filters.listingType ?? "RENT",
       ...(filters.bedroomsMin !== undefined ? { bedrooms: { gte: filters.bedroomsMin } } : {}),
@@ -222,7 +253,7 @@ export async function listPublicListings(filters: PublicListingFilters) {
     take: limit + 1,
     ...(filters.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
     select: {
-      id: true, title: true, neighborhood: true, estate: true, bedrooms: true,
+      id: true, title: true, neighborhood: true, county: true, estate: true, bedrooms: true,
       bathrooms: true, category: true, listingType: true, rentKesCents: true,
       salePriceKes: true, depositMonths: true,
       features: true, primaryPhotoKey: true, photoKeys: true,

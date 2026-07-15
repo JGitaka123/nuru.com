@@ -10,8 +10,8 @@ import { LangProvider } from "@/lib/i18n";
 const THEME_SCRIPT = `try{var t=localStorage.getItem("nuru-theme");if(t==="dark"||(!t&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark");var l=localStorage.getItem("nuru-lang");if(l)document.documentElement.lang=l;}catch(e){}`;
 
 export const metadata: Metadata = {
-  title: "Nuru — Rent or buy your home in Nairobi",
-  description: "Verified rentals and homes for sale across Nairobi. Conversational search, transparent M-Pesa escrow, no bait listings.",
+  title: "Nuru — Rent or buy your home, anywhere in Kenya",
+  description: "Verified rentals and homes for sale across Kenya — Nairobi, Mombasa, Kisumu, Nakuru, Eldoret and beyond. Conversational search, transparent M-Pesa escrow, no bait listings.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [

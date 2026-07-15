@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
+import { PageHeading, AdminNav } from "@/components/ui";
 
 interface SubRow {
   id: string;
@@ -55,12 +55,12 @@ export default function AdminSubscriptionsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <Link href="/admin" className="text-sm text-ink-500 hover:underline">← Admin</Link>
-      <h1 className="text-3xl font-bold">Subscriptions</h1>
+    <div className="space-y-8">
+      <PageHeading eyebrow="Operations" title="Subscriptions" />
+      <AdminNav active="/admin/subscriptions" />
 
       <div className="flex gap-2 text-sm">
-        <select value={filter} onChange={(e) => setFilter(e.target.value)} className="rounded-lg border border-ink-200 bg-surface px-3 py-1.5">
+        <select value={filter} onChange={(e) => setFilter(e.target.value)} className="rounded-xl border border-ink-200 bg-surface px-3 py-2">
           <option value="">All</option>
           {["TRIALING", "ACTIVE", "PAST_DUE", "CANCELED", "EXPIRED", "PAUSED"].map((s) => <option key={s}>{s}</option>)}
         </select>
@@ -71,33 +71,33 @@ export default function AdminSubscriptionsPage() {
       ) : items.length === 0 ? (
         <p className="text-ink-500">No subscriptions.</p>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-ink-200">
+        <div className="overflow-hidden rounded-2xl border border-ink-200 shadow-card">
           <table className="w-full bg-surface text-sm">
-            <thead className="bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+            <thead className="border-b border-ink-100 text-left text-xs font-medium uppercase tracking-wide text-ink-400">
               <tr>
-                <th className="px-3 py-2">User</th>
-                <th className="px-3 py-2">Plan</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">Period end</th>
-                <th className="px-3 py-2">Last invoice</th>
-                <th className="px-3 py-2"></th>
+                <th className="px-4 py-3">User</th>
+                <th className="px-4 py-3">Plan</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Period end</th>
+                <th className="px-4 py-3">Last invoice</th>
+                <th className="px-4 py-3"></th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-ink-100">
               {items.map((s) => (
-                <tr key={s.id} className="border-t border-ink-100">
-                  <td className="px-3 py-2 font-mono text-xs">{s.userId.slice(0, 10)}…</td>
-                  <td className="px-3 py-2">
+                <tr key={s.id}>
+                  <td className="px-4 py-3 font-mono text-xs">{s.userId.slice(0, 10)}…</td>
+                  <td className="px-4 py-3">
                     {s.plan.name}
                     <span className="block text-xs text-ink-500">KES {(s.plan.monthlyKesCents / 100).toLocaleString("en-KE")}/mo</span>
                   </td>
-                  <td className="px-3 py-2">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[s.status] ?? "bg-ink-100"}`}>{s.status}</span>
+                  <td className="px-4 py-3">
+                    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGE[s.status] ?? "bg-ink-100 text-ink-700"}`}>{s.status}</span>
                     {s.failedAttempts > 0 && <span className="ml-1 text-xs text-red-600">×{s.failedAttempts}</span>}
                   </td>
-                  <td className="px-3 py-2 text-ink-700">{new Date(s.currentPeriodEnd).toLocaleDateString("en-KE")}</td>
-                  <td className="px-3 py-2 text-ink-700">{s.invoices[0] ? `${s.invoices[0].status} · ${s.invoices[0].mpesaReceipt ?? "—"}` : "—"}</td>
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3 text-ink-700">{new Date(s.currentPeriodEnd).toLocaleDateString("en-KE")}</td>
+                  <td className="px-4 py-3 text-ink-700">{s.invoices[0] ? `${s.invoices[0].status} · ${s.invoices[0].mpesaReceipt ?? "—"}` : "—"}</td>
+                  <td className="px-4 py-3">
                     <button
                       onClick={() => pause(s.userId, s.status !== "PAUSED")}
                       className="text-xs text-ink-600 hover:underline"

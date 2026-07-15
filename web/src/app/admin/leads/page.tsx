@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
 import { toast } from "@/components/Toast";
+import { PageHeading, AdminNav, btnBrand } from "@/components/ui";
 
 interface Lead {
   id: string;
@@ -104,38 +104,41 @@ export default function AdminLeadsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Link href="/admin" className="text-sm text-ink-500 hover:underline">← Admin</Link>
-        <button onClick={() => setShowCreate((v) => !v)} className="rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600">
-          {showCreate ? "Close" : "+ Add lead"}
-        </button>
-      </div>
-      <h1 className="text-3xl font-bold">Leads</h1>
+    <div className="space-y-8">
+      <PageHeading
+        eyebrow="Operations"
+        title="Leads"
+        actions={
+          <button onClick={() => setShowCreate((v) => !v)} className={btnBrand}>
+            {showCreate ? "Close" : "+ Add lead"}
+          </button>
+        }
+      />
+      <AdminNav active="/admin/leads" />
 
       {showCreate && (
-        <form onSubmit={create} className="grid gap-3 rounded-xl bg-surface p-4 ring-1 ring-ink-200 sm:grid-cols-2">
-          <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="rounded-lg border border-ink-200 px-3 py-2">
+        <form onSubmit={create} className="grid gap-3 rounded-2xl border border-ink-200 bg-surface p-5 shadow-card sm:grid-cols-2">
+          <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="rounded-xl border border-ink-200 bg-surface px-3 py-2">
             {TYPES.map((t) => <option key={t}>{t}</option>)}
           </select>
-          <input placeholder="Organization name" value={form.organizationName} onChange={(e) => setForm({ ...form, organizationName: e.target.value })} required minLength={2} className="rounded-lg border border-ink-200 px-3 py-2" />
-          <input placeholder="Contact name" value={form.contactName} onChange={(e) => setForm({ ...form, contactName: e.target.value })} className="rounded-lg border border-ink-200 px-3 py-2" />
-          <input placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="rounded-lg border border-ink-200 px-3 py-2" />
-          <input placeholder="Website" type="url" value={form.websiteUrl} onChange={(e) => setForm({ ...form, websiteUrl: e.target.value })} className="rounded-lg border border-ink-200 px-3 py-2" />
-          <input placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="rounded-lg border border-ink-200 px-3 py-2" />
-          <input placeholder="Est. listings count" type="number" min={0} value={form.estimatedListingsCount} onChange={(e) => setForm({ ...form, estimatedListingsCount: Number(e.target.value) })} className="rounded-lg border border-ink-200 px-3 py-2" />
-          <input placeholder="Source" value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} className="rounded-lg border border-ink-200 px-3 py-2" />
-          <textarea placeholder="Signal notes (why this lead?)" value={form.signalNotes} onChange={(e) => setForm({ ...form, signalNotes: e.target.value })} className="rounded-lg border border-ink-200 px-3 py-2 sm:col-span-2" rows={2} />
-          <button className="rounded-lg bg-brand-500 px-3 py-2 font-medium text-white hover:bg-brand-600 sm:col-span-2">Create lead</button>
+          <input placeholder="Organization name" value={form.organizationName} onChange={(e) => setForm({ ...form, organizationName: e.target.value })} required minLength={2} className="rounded-xl border border-ink-200 bg-surface px-3 py-2" />
+          <input placeholder="Contact name" value={form.contactName} onChange={(e) => setForm({ ...form, contactName: e.target.value })} className="rounded-xl border border-ink-200 bg-surface px-3 py-2" />
+          <input placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="rounded-xl border border-ink-200 bg-surface px-3 py-2" />
+          <input placeholder="Website" type="url" value={form.websiteUrl} onChange={(e) => setForm({ ...form, websiteUrl: e.target.value })} className="rounded-xl border border-ink-200 bg-surface px-3 py-2" />
+          <input placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="rounded-xl border border-ink-200 bg-surface px-3 py-2" />
+          <input placeholder="Est. listings count" type="number" min={0} value={form.estimatedListingsCount} onChange={(e) => setForm({ ...form, estimatedListingsCount: Number(e.target.value) })} className="rounded-xl border border-ink-200 bg-surface px-3 py-2" />
+          <input placeholder="Source" value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} className="rounded-xl border border-ink-200 bg-surface px-3 py-2" />
+          <textarea placeholder="Signal notes (why this lead?)" value={form.signalNotes} onChange={(e) => setForm({ ...form, signalNotes: e.target.value })} className="rounded-xl border border-ink-200 bg-surface px-3 py-2 sm:col-span-2" rows={2} />
+          <button className={`sm:col-span-2 ${btnBrand}`}>Create lead</button>
         </form>
       )}
 
       <div className="flex gap-2 text-sm">
-        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="rounded-lg border border-ink-200 bg-surface px-3 py-1.5">
+        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="rounded-xl border border-ink-200 bg-surface px-3 py-2">
           <option value="">All types</option>
           {TYPES.map((t) => <option key={t}>{t}</option>)}
         </select>
-        <select value={filterStage} onChange={(e) => setFilterStage(e.target.value)} className="rounded-lg border border-ink-200 bg-surface px-3 py-1.5">
+        <select value={filterStage} onChange={(e) => setFilterStage(e.target.value)} className="rounded-xl border border-ink-200 bg-surface px-3 py-2">
           <option value="">All stages</option>
           {STAGES.map((s) => <option key={s}>{s}</option>)}
         </select>
@@ -144,34 +147,34 @@ export default function AdminLeadsPage() {
       {loading ? (
         <p className="text-ink-500">Loading…</p>
       ) : error ? (
-        <div className="rounded-lg bg-red-50 p-4 text-red-700">{error}</div>
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>
       ) : items.length === 0 ? (
         <p className="text-ink-500">No leads yet.</p>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-ink-200">
+        <div className="overflow-hidden rounded-2xl border border-ink-200 shadow-card">
           <table className="w-full bg-surface text-sm">
-            <thead className="bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
+            <thead className="border-b border-ink-100 text-left text-xs font-medium uppercase tracking-wide text-ink-400">
               <tr>
-                <th className="px-3 py-2">Organization</th>
-                <th className="px-3 py-2">Type</th>
-                <th className="px-3 py-2">City</th>
-                <th className="px-3 py-2">Email</th>
-                <th className="px-3 py-2">Stage</th>
-                <th className="px-3 py-2"></th>
+                <th className="px-4 py-3">Organization</th>
+                <th className="px-4 py-3">Type</th>
+                <th className="px-4 py-3">City</th>
+                <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Stage</th>
+                <th className="px-4 py-3"></th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-ink-100">
               {items.map((l) => (
-                <tr key={l.id} className="border-t border-ink-100">
-                  <td className="px-3 py-2 font-medium">{l.organizationName}{l.contactName && <span className="block text-xs text-ink-500">{l.contactName}</span>}</td>
-                  <td className="px-3 py-2">{l.type}</td>
-                  <td className="px-3 py-2">{l.city ?? "—"}</td>
-                  <td className="px-3 py-2 text-ink-700">{l.email ?? "—"}</td>
-                  <td className="px-3 py-2">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_BADGE[l.stage] ?? "bg-ink-100"}`}>{l.stage}</span>
+                <tr key={l.id}>
+                  <td className="px-4 py-3 font-medium text-ink-900">{l.organizationName}{l.contactName && <span className="block text-xs font-normal text-ink-500">{l.contactName}</span>}</td>
+                  <td className="px-4 py-3">{l.type}</td>
+                  <td className="px-4 py-3">{l.city ?? "—"}</td>
+                  <td className="px-4 py-3 text-ink-700">{l.email ?? "—"}</td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${STAGE_BADGE[l.stage] ?? "bg-ink-100 text-ink-700"}`}>{l.stage}</span>
                   </td>
-                  <td className="px-3 py-2">
-                    <select value={l.stage} onChange={(e) => setStage(l.id, e.target.value)} className="rounded border border-ink-200 px-2 py-1 text-xs">
+                  <td className="px-4 py-3">
+                    <select value={l.stage} onChange={(e) => setStage(l.id, e.target.value)} className="rounded-lg border border-ink-200 bg-surface px-2 py-1 text-xs">
                       {STAGES.map((s) => <option key={s}>{s}</option>)}
                     </select>
                   </td>

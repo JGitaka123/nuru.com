@@ -31,10 +31,15 @@ import { conversationRoutes } from "./routes/conversations";
 import { reviewRoutes } from "./routes/reviews";
 import { referralRoutes } from "./routes/referrals";
 import { logger } from "./lib/logger";
+import { validateEnvOrExit } from "./lib/env";
 import { inferenceHealth } from "./services/inference";
 import { prisma } from "./db/client";
 import { redis } from "./workers/queues";
 import { AppError, toHttpError } from "./lib/errors";
+
+// Fail fast on a misconfigured environment (e.g. missing/short JWT_SECRET)
+// rather than 500ing mid-request after an OTP has already been consumed.
+validateEnvOrExit();
 
 const app = Fastify({
   logger,

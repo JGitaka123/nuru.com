@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
 import { toast } from "@/components/Toast";
+import { PageHeading, AdminNav, btnSecondary } from "@/components/ui";
 
 interface FraudReport {
   id: string;
@@ -66,14 +66,11 @@ export default function AdminReportsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <Link href="/admin" className="text-sm text-ink-500 hover:underline">&lt;- Admin</Link>
-      <div>
-        <h1 className="text-3xl font-bold">Fraud reports</h1>
-        <p className="text-ink-600">Open reports from tenants and agents.</p>
-      </div>
+    <div className="space-y-8">
+      <PageHeading eyebrow="Operations" title="Fraud reports" subtitle="Open reports from tenants and agents." />
+      <AdminNav active="/admin/reports" />
 
-      {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+      {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
       {loading ? (
         <p className="text-ink-500">Loading...</p>
       ) : items.length === 0 ? (
@@ -81,10 +78,10 @@ export default function AdminReportsPage() {
       ) : (
         <ul className="space-y-3">
           {items.map((report) => (
-            <li key={report.id} className="rounded-xl border border-ink-200 bg-surface p-4">
+            <li key={report.id} className="rounded-2xl border border-ink-200 bg-surface p-5 shadow-card">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="font-semibold">{report.listing?.title ?? "Listing removed"}</p>
+                  <p className="font-serif text-lg text-ink-900">{report.listing?.title ?? "Listing removed"}</p>
                   <p className="text-sm text-ink-500">
                     {report.reason.replaceAll("_", " ")} by {report.reporter.name ?? report.reporter.phoneE164}
                   </p>
@@ -92,7 +89,7 @@ export default function AdminReportsPage() {
                 <button
                   disabled={busy === report.id}
                   onClick={() => resolve(report.id)}
-                  className="rounded-lg border border-ink-300 px-3 py-1.5 text-sm hover:bg-ink-50 disabled:opacity-50"
+                  className={`${btnSecondary} disabled:opacity-50`}
                 >
                   Resolve
                 </button>

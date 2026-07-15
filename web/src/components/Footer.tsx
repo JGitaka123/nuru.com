@@ -13,7 +13,7 @@ export default function Footer() {
         <div className="max-w-xs">
           <Logo />
           <p className="mt-4 text-sm leading-relaxed text-ink-500">
-            Verified rentals and homes for sale across Nairobi, with deposits held in M-Pesa escrow until you move in.
+            Verified rentals and homes for sale across Kenya, with deposits held in M-Pesa escrow until you move in.
           </p>
         </div>
         <FooterCol title="Explore" links={[["Rent", "/search"], ["Buy", "/search?type=SALE"], ["Pricing", "/pricing"]]} />

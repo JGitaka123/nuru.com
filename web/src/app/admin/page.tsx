@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
+import { PageHeading, StatTile, Panel, AdminNav } from "@/components/ui";
 
 interface Metrics {
   totals: { totalUsers: number; totalListings: number; activeListings: number };
@@ -32,63 +32,43 @@ export default function AdminDashboard() {
       .catch((e) => setError(e.message));
   }, [router]);
 
-  if (error) return <div className="rounded-lg bg-red-50 p-4 text-red-700">{error}</div>;
+  if (error) return <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>;
   if (!metrics || !funnel) return <div className="text-ink-500">Loading…</div>;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Admin</h1>
+    <div className="space-y-8">
+      <PageHeading eyebrow="Operations" title="Admin overview" />
+      <AdminNav active="/admin" />
 
-      <nav className="flex flex-wrap gap-2 text-sm">
-        {[
-          ["/admin/subscriptions", "Subscriptions"],
-          ["/admin/agent-tasks", "CRM queue"],
-          ["/admin/leads", "Leads"],
-          ["/admin/campaigns", "Campaigns"],
-          ["/admin/reports", "Fraud reports"],
-          ["/admin/ai-queue", "AI feedback"],
-          ["/admin/verification", "Verification queue"],
-        ].map(([href, label]) => (
-          <Link key={href} href={href} className="rounded-lg border border-ink-300 bg-surface px-3 py-1.5 hover:bg-ink-50">
-            {label}
-          </Link>
-        ))}
-      </nav>
-
-      <section className="grid gap-3 sm:grid-cols-3">
-        <Stat label="Users" value={metrics.totals.totalUsers} />
-        <Stat label="Active listings" value={`${metrics.totals.activeListings}/${metrics.totals.totalListings}`} />
-        <Stat label="Active leases" value={metrics.operational.leasesActive} />
-        <Stat label="Escrows held" value={metrics.operational.escrowsHeld} />
-        <Stat label="Open reports" value={metrics.operational.openReports} />
-        <Stat label="24h new users" value={metrics.last24h.usersDay} />
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatTile label="Users" value={metrics.totals.totalUsers} hint={`${metrics.last24h.usersDay} new in 24h`} />
+        <StatTile label="Active listings" value={`${metrics.totals.activeListings}/${metrics.totals.totalListings}`} />
+        <StatTile label="Active leases" value={metrics.operational.leasesActive} />
+        <StatTile label="Escrows held" value={metrics.operational.escrowsHeld} />
+        <StatTile label="Open reports" value={metrics.operational.openReports} />
+        <StatTile label="Viewings (24h)" value={metrics.last24h.viewingsDay} />
       </section>
 
-      <section>
-        <h2 className="mb-2 text-lg font-semibold">Funnel — last {funnel.days} days</h2>
-        <ol className="space-y-2 rounded-xl bg-surface p-4 ring-1 ring-ink-200">
-          {funnel.funnel.map((s, i) => {
-            const max = funnel.funnel[0]?.count || 1;
-            const width = Math.max(2, (s.count / max) * 100);
-            return (
-              <li key={s.stage} className="flex items-center gap-3 text-sm">
-                <span className="w-40 text-ink-700">{i + 1}. {s.stage.replace("_", " ")}</span>
-                <span className="font-medium">{s.count.toLocaleString()}</span>
-                <span className="ml-auto h-2 rounded-full bg-brand-200" style={{ width: `${width}%` }} aria-hidden="true" />
-              </li>
-            );
-          })}
-        </ol>
+      <section className="space-y-3">
+        <h2 className="font-serif text-xl text-ink-900">Funnel — last {funnel.days} days</h2>
+        <Panel>
+          <ol className="space-y-3">
+            {funnel.funnel.map((s, i) => {
+              const max = funnel.funnel[0]?.count || 1;
+              const width = Math.max(2, (s.count / max) * 100);
+              return (
+                <li key={s.stage} className="flex items-center gap-3 text-sm">
+                  <span className="w-44 text-ink-600">{i + 1}. {s.stage.replace(/_/g, " ")}</span>
+                  <span className="w-12 font-medium text-ink-900">{s.count.toLocaleString()}</span>
+                  <span className="h-2 flex-1 overflow-hidden rounded-full bg-ink-100">
+                    <span className="block h-full rounded-full bg-brand-400" style={{ width: `${width}%` }} aria-hidden="true" />
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </Panel>
       </section>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-xl bg-surface p-4 ring-1 ring-ink-200">
-      <p className="text-xs uppercase tracking-wide text-ink-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold">{value}</p>
     </div>
   );
 }

@@ -4,16 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, getToken, type Listing, type SessionUser } from "@/lib/api";
-import { formatKes, formatCategory, photoUrl } from "@/lib/format";
-
-const STATUS_BADGE: Record<string, string> = {
-  DRAFT: "bg-ink-100 text-ink-700",
-  PENDING_REVIEW: "bg-amber-100 text-amber-800",
-  ACTIVE: "bg-green-100 text-green-800",
-  PAUSED: "bg-ink-200 text-ink-800",
-  RENTED: "bg-brand-100 text-brand-800",
-  REMOVED: "bg-red-100 text-red-800",
-};
+import { formatKes, formatKesFull, formatCategory, photoUrl } from "@/lib/format";
+import { PageHeading, StatTile, StatusBadge, btnSecondary, btnBrand } from "@/components/ui";
 
 export default function AgentDashboard() {
   const router = useRouter();
@@ -37,78 +29,93 @@ export default function AgentDashboard() {
   }, [router]);
 
   if (loading) return <div className="text-ink-500">Loading…</div>;
-  if (error) return <div className="rounded-lg bg-red-50 p-4 text-red-700">{error}</div>;
+  if (error) return <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>;
   if (user && user.role !== "AGENT" && user.role !== "LANDLORD" && user.role !== "ADMIN") {
     return (
-      <div className="rounded-xl bg-surface p-8">
-        <h1 className="text-xl font-bold">Agent dashboard</h1>
+      <div className="rounded-2xl border border-ink-200 bg-surface p-8 shadow-card">
+        <h1 className="font-serif text-2xl text-ink-900">Agent dashboard</h1>
         <p className="mt-2 text-ink-600">This area is for agents and landlords. Switch your account or contact us.</p>
       </div>
     );
   }
 
+  const active = listings.filter((l) => l.status === "ACTIVE").length;
+  const forSale = listings.filter((l) => l.listingType === "SALE").length;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">My listings</h1>
-          <p className="text-ink-600">Hi {user?.name ?? "there"} — let&apos;s get your properties in front of tenants.</p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/agent/analytics" className="rounded-lg border border-ink-300 bg-surface px-4 py-2 font-medium hover:bg-ink-50">
-            Analytics
-          </Link>
-          <Link href="/agent/inbox" className="rounded-lg border border-ink-300 bg-surface px-4 py-2 font-medium hover:bg-ink-50">
-            Inbox
-          </Link>
-          <Link href="/agent/new" className="rounded-lg bg-brand-500 px-4 py-2 font-semibold text-white hover:bg-brand-600">
-            + New listing
-          </Link>
-        </div>
-      </div>
+    <div className="space-y-8">
+      <PageHeading
+        eyebrow="Agent workspace"
+        title="My listings"
+        subtitle={`Hi ${user?.name ?? "there"} — let's get your properties in front of buyers and tenants.`}
+        actions={
+          <>
+            <Link href="/agent/analytics" className={btnSecondary}>Analytics</Link>
+            <Link href="/agent/inbox" className={btnSecondary}>Inbox</Link>
+            <Link href="/agent/new" className={btnBrand}>+ New listing</Link>
+          </>
+        }
+      />
+
+      {listings.length > 0 && (
+        <section className="grid gap-4 sm:grid-cols-3">
+          <StatTile label="Listings" value={listings.length} hint={`${active} active`} />
+          <StatTile label="For rent" value={listings.length - forSale} />
+          <StatTile label="For sale" value={forSale} />
+        </section>
+      )}
 
       {user?.verificationStatus !== "VERIFIED" && (
-        <div className="rounded-xl bg-amber-50 p-4 ring-1 ring-amber-200">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
           <p className="font-medium text-amber-900">Verify your account to publish listings.</p>
-          <p className="mt-1 text-sm text-amber-800">Add your KRA PIN and ID. Takes 2 minutes.</p>
-          <Link href="/agent/verify" className="mt-2 inline-block rounded-md bg-amber-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-amber-600">
+          <p className="mt-1 text-sm text-amber-800">Add your KRA PIN and ID — takes 2 minutes.</p>
+          <Link href="/agent/verify" className="mt-3 inline-block rounded-lg bg-amber-500 px-3.5 py-2 text-sm font-medium text-white hover:bg-amber-600">
             Verify now
           </Link>
         </div>
       )}
 
       {listings.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-ink-200 p-8 text-center">
-          <p className="text-ink-600">No listings yet. Take 6 photos and let AI draft the rest.</p>
-          <Link href="/agent/new" className="mt-3 inline-block rounded-md bg-brand-500 px-4 py-2 font-semibold text-white hover:bg-brand-600">
+        <div className="rounded-2xl border-2 border-dashed border-ink-200 p-12 text-center">
+          <h2 className="font-serif text-xl text-ink-900">No listings yet</h2>
+          <p className="mt-2 text-ink-500">Take 6 photos and let AI draft the rest.</p>
+          <Link href="/agent/new" className="mt-5 inline-block rounded-xl bg-brand-500 px-5 py-2.5 font-medium text-white hover:bg-brand-600">
             Create your first listing
           </Link>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {listings.map((l) => (
-            <Link key={l.id} href={`/agent/${l.id}`} className="flex gap-4 rounded-xl border border-ink-200 bg-surface p-4 hover:shadow-md">
-              <div className="h-24 w-24 flex-none overflow-hidden rounded-lg bg-ink-100">
-                {l.primaryPhotoKey && photoUrl(l.primaryPhotoKey) ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={photoUrl(l.primaryPhotoKey)!} alt="" className="h-full w-full object-cover" />
-                ) : null}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-2">
-                  <h2 className="truncate font-semibold">{l.title || "Untitled"}</h2>
-                  <span className={`flex-none rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[l.status] ?? "bg-ink-100"}`}>
-                    {l.status}
-                  </span>
+          {listings.map((l) => {
+            const isSale = l.listingType === "SALE";
+            return (
+              <Link key={l.id} href={`/agent/${l.id}`}
+                className="flex gap-4 rounded-2xl border border-ink-200 bg-surface p-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-lift">
+                <div className="h-24 w-24 flex-none overflow-hidden rounded-xl bg-ink-100">
+                  {l.primaryPhotoKey && photoUrl(l.primaryPhotoKey) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={photoUrl(l.primaryPhotoKey)!} alt="" className="h-full w-full object-cover" />
+                  ) : null}
                 </div>
-                <p className="text-sm text-ink-500">{l.neighborhood} · {formatCategory(l.category)}</p>
-                <p className="mt-1 font-semibold">{formatKes(l.rentKesCents)}/mo</p>
-                {l.fraudScore >= 60 && (
-                  <p className="mt-1 text-xs text-red-700">⚠ Risk score {l.fraudScore} — review before publishing</p>
-                )}
-              </div>
-            </Link>
-          ))}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className="truncate font-serif text-lg text-ink-900">{l.title || "Untitled"}</h2>
+                    <StatusBadge status={l.status} />
+                  </div>
+                  <p className="mt-0.5 text-sm text-ink-500">
+                    {l.neighborhood} · {formatCategory(l.category)} · {isSale ? "For sale" : "For rent"}
+                  </p>
+                  <p className="mt-1.5 font-serif text-lg font-semibold text-ink-900">
+                    {isSale
+                      ? (l.salePriceKes != null ? formatKesFull(l.salePriceKes) : "Price on request")
+                      : <>{formatKes(l.rentKesCents)}<span className="text-sm font-normal text-ink-500">/mo</span></>}
+                  </p>
+                  {l.fraudScore >= 60 && (
+                    <p className="mt-1 text-xs text-red-700">⚠ Risk score {l.fraudScore} — review before publishing</p>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

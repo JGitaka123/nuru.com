@@ -108,6 +108,7 @@ export interface Listing {
   depositMonths: number;
   features: string[];
   neighborhood: string;
+  county?: string | null;
   estate?: string | null;
   primaryPhotoKey?: string | null;
   photoKeys: string[];

@@ -24,6 +24,7 @@ import { recordEvent } from "../services/events";
 
 const PublicQuery = z.object({
   neighborhood: z.string().optional(),
+  county: z.string().optional(),
   category: z.enum(["BEDSITTER", "STUDIO", "ONE_BR", "TWO_BR", "THREE_BR", "FOUR_PLUS_BR", "MAISONETTE", "TOWNHOUSE"]).optional(),
   listingType: z.enum(["RENT", "SALE"]).optional(),
   bedroomsMin: z.coerce.number().int().min(0).max(10).optional(),
@@ -67,6 +68,7 @@ export async function listingRoutes(app: FastifyInstance) {
     const q = PublicQuery.parse(req.query);
     const result = await listPublicListings({
       neighborhood: q.neighborhood,
+      county: q.county,
       category: q.category,
       listingType: q.listingType,
       bedroomsMin: q.bedroomsMin,
