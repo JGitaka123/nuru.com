@@ -117,6 +117,46 @@ async function main() {
   }
   console.log("  6 demo listings created");
 
+  // 5. A few for-sale listings.
+  const SALES = [
+    { neighborhood: "Lavington", bedrooms: 4, category: "FOUR_PLUS_BR" as const, priceKes: 42_000_000, title: "4BR Lavington townhouse for sale" },
+    { neighborhood: "Kilimani", bedrooms: 3, category: "THREE_BR" as const, priceKes: 18_500_000, title: "3BR Kilimani apartment for sale" },
+    { neighborhood: "Karen", bedrooms: 5, category: "FOUR_PLUS_BR" as const, priceKes: 85_000_000, title: "5BR Karen villa on half acre" },
+  ];
+  for (let i = 0; i < SALES.length; i++) {
+    const s = SALES[i];
+    const listing = await prisma.listing.create({
+      data: {
+        agentId: agent.id,
+        title: s.title,
+        description: `A ${s.bedrooms} bedroom home for sale in ${s.neighborhood}. Freehold title, mature garden, ample parking, borehole and backup power. Close to schools and shopping. Serious buyers only — contact the agent to arrange a viewing.`,
+        category: s.category,
+        listingType: "SALE",
+        bedrooms: s.bedrooms,
+        bathrooms: Math.max(2, s.bedrooms - 1),
+        rentKesCents: 0,
+        salePriceKes: s.priceKes,
+        depositMonths: 0,
+        features: ["parking", "backup_generator", "borehole", "garden", "dsq"],
+        neighborhood: s.neighborhood,
+        photoKeys: [`listings/${agent.id}/sale-${i}.jpg`],
+        primaryPhotoKey: `listings/${agent.id}/sale-${i}.jpg`,
+        status: "ACTIVE",
+        publishedAt: new Date(),
+        verificationStatus: "VERIFIED",
+        verifiedAt: new Date(),
+        fraudScore: 4 + i,
+        aiQualityScore: 0.8,
+      },
+    });
+    const [lat, lng] = CENTROIDS[s.neighborhood] ?? [-1.3197, 36.7068];
+    await prisma.$executeRaw`
+      UPDATE "Listing"
+      SET location = ST_SetSRID(ST_MakePoint(${lng + i * 0.003}, ${lat + i * 0.003}), 4326)::geography
+      WHERE id = ${listing.id}`;
+  }
+  console.log(`  ${SALES.length} for-sale listings created`);
+
   console.log("Done.");
 }
 

@@ -16,6 +16,7 @@ import { z } from "zod";
 import { run, type RunResult } from "../ai/router";
 
 export const SearchFiltersSchema = z.object({
+  listingType: z.enum(["RENT", "SALE"]).default("RENT"),
   neighborhoods: z.array(z.string()),
   bedroomsMin: z.number().int().nullable(),
   bedroomsMax: z.number().int().nullable(),
@@ -82,10 +83,16 @@ Pangani, Eastleigh.
 9. clarifyingQuestion: only if the query is genuinely ambiguous (e.g. no
    location AND no budget AND no bedrooms). Keep to one short question.
    Otherwise null.
-10. Output strict JSON, nothing else.
+10. listingType: "SALE" if the user wants to BUY/purchase a property
+    ("for sale", "buy", "purchase", "kununua", "nunua", "own"). Otherwise
+    "RENT" (the default — renting/letting, "to let", "kukodi", "keja").
+    When SALE, treat any budget figure as a total asking price, not rent,
+    and leave rentMaxKes/rentMinKes null.
+11. Output strict JSON, nothing else.
 
 # Output schema
 {
+  "listingType": "RENT"|"SALE",
   "neighborhoods": [string],
   "bedroomsMin": int|null, "bedroomsMax": int|null,
   "rentMaxKes": int|null, "rentMinKes": int|null,
@@ -101,6 +108,7 @@ Pangani, Eastleigh.
 
 Query: "2BR Kilimani under 60K with parking"
 {
+  "listingType": "RENT",
   "neighborhoods": ["Kilimani"], "bedroomsMin": 2, "bedroomsMax": 2,
   "rentMaxKes": 60000, "rentMinKes": null, "category": "TWO_BR",
   "mustHave": ["parking"], "niceToHave": [], "nearLandmarks": [],
@@ -108,8 +116,19 @@ Query: "2BR Kilimani under 60K with parking"
   "clarifyingQuestion": null, "detectedLanguage": "en"
 }
 
+Query: "3 bedroom house for sale in Lavington"
+{
+  "listingType": "SALE",
+  "neighborhoods": ["Lavington"], "bedroomsMin": 3, "bedroomsMax": 3,
+  "rentMaxKes": null, "rentMinKes": null, "category": "THREE_BR",
+  "mustHave": [], "niceToHave": [], "nearLandmarks": [],
+  "semanticQuery": "three bedroom house to buy",
+  "clarifyingQuestion": null, "detectedLanguage": "en"
+}
+
 Query: "natafuta keja Kile na pet zangu, around 80k"
 {
+  "listingType": "RENT",
   "neighborhoods": ["Kileleshwa"], "bedroomsMin": null, "bedroomsMax": null,
   "rentMaxKes": 88000, "rentMinKes": null, "category": null,
   "mustHave": ["pet_friendly"], "niceToHave": [], "nearLandmarks": [],
@@ -120,6 +139,7 @@ Query: "natafuta keja Kile na pet zangu, around 80k"
 
 Query: "somewhere quiet for my family, near a good school, max 120k"
 {
+  "listingType": "RENT",
   "neighborhoods": [], "bedroomsMin": null, "bedroomsMax": null,
   "rentMaxKes": 120000, "rentMinKes": null, "category": null,
   "mustHave": [], "niceToHave": ["near_school"], "nearLandmarks": [],
@@ -201,6 +221,10 @@ export function heuristicParseSearchQuery(query: string): SearchFilters {
   const isBedsitter = /\bbedsitter\b/.test(q);
   const isStudio = /\bstudio\b/.test(q);
 
+  // Buy vs rent intent.
+  const listingType: "RENT" | "SALE" =
+    /\b(for sale|to buy|buy|purchase|kununua|nunua)\b/.test(q) ? "SALE" : "RENT";
+
   // Money: "under 60k", "max 80,000", "around 80k", "60k-80k", "below 100000".
   // Bare "NNk"/large numbers are treated as a budget ceiling.
   const toKes = (s: string): number => {
@@ -248,11 +272,13 @@ export function heuristicParseSearchQuery(query: string): SearchFilters {
               : null;
 
   return {
+    listingType,
     neighborhoods,
     bedroomsMin: bedrooms,
     bedroomsMax: bedrooms,
-    rentMaxKes,
-    rentMinKes,
+    // For SALE queries the parsed budget is an asking price, not rent.
+    rentMaxKes: listingType === "SALE" ? null : rentMaxKes,
+    rentMinKes: listingType === "SALE" ? null : rentMinKes,
     category,
     mustHave,
     niceToHave: [],

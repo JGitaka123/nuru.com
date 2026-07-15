@@ -25,8 +25,10 @@ import { recordEvent } from "../services/events";
 const PublicQuery = z.object({
   neighborhood: z.string().optional(),
   category: z.enum(["BEDSITTER", "STUDIO", "ONE_BR", "TWO_BR", "THREE_BR", "FOUR_PLUS_BR", "MAISONETTE", "TOWNHOUSE"]).optional(),
+  listingType: z.enum(["RENT", "SALE"]).optional(),
   bedroomsMin: z.coerce.number().int().min(0).max(10).optional(),
   rentMaxKes: z.coerce.number().int().optional(),
+  salePriceMaxKes: z.coerce.number().int().optional(),
   cursor: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(50).optional(),
 });
@@ -66,8 +68,10 @@ export async function listingRoutes(app: FastifyInstance) {
     const result = await listPublicListings({
       neighborhood: q.neighborhood,
       category: q.category,
+      listingType: q.listingType,
       bedroomsMin: q.bedroomsMin,
       rentMaxKesCents: q.rentMaxKes !== undefined ? q.rentMaxKes * 100 : undefined,
+      salePriceMaxKes: q.salePriceMaxKes,
       cursor: q.cursor,
       limit: q.limit,
     });

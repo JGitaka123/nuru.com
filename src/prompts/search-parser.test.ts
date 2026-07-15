@@ -4,12 +4,25 @@ import { heuristicParseSearchQuery, parseSearchQuery, SearchFiltersSchema } from
 describe("heuristicParseSearchQuery", () => {
   it("parses the canonical query shape", () => {
     const f = heuristicParseSearchQuery("2BR Kilimani under 60K with parking");
+    expect(f.listingType).toBe("RENT");
     expect(f.neighborhoods).toEqual(["Kilimani"]);
     expect(f.bedroomsMin).toBe(2);
     expect(f.bedroomsMax).toBe(2);
     expect(f.rentMaxKes).toBe(60000);
     expect(f.category).toBe("TWO_BR");
     expect(f.mustHave).toContain("parking");
+  });
+
+  it("detects buy/sale intent and drops rent budget", () => {
+    const f = heuristicParseSearchQuery("3 bedroom house for sale in Lavington");
+    expect(f.listingType).toBe("SALE");
+    expect(f.neighborhoods).toEqual(["Lavington"]);
+    expect(f.category).toBe("THREE_BR");
+    expect(f.rentMaxKes).toBeNull();
+    const sw = heuristicParseSearchQuery("nataka kununua nyumba Karen");
+    expect(sw.listingType).toBe("SALE");
+    // Plain rental query stays RENT.
+    expect(heuristicParseSearchQuery("2BR Kilimani to let").listingType).toBe("RENT");
   });
 
   it("always produces schema-valid output", () => {

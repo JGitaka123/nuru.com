@@ -52,6 +52,8 @@ export async function searchRoutes(app: FastifyInstance) {
     // Using Prisma's raw SQL for pgvector — we'll add the geo + vector
     // similarity in a single query for efficiency.
     const filterClauses: string[] = ["status = 'ACTIVE'", '"fraudScore" < 60'];
+    // Rent vs buy — default RENT so existing rental search is unchanged.
+    filterClauses.push(`"listingType" = '${f.listingType === "SALE" ? "SALE" : "RENT"}'`);
     const params: any[] = [];
     let p = 1;
 
@@ -122,6 +124,8 @@ export async function searchRoutes(app: FastifyInstance) {
       title: string;
       neighborhood: string;
       rent_kes_cents: number;
+      sale_price_kes: number | null;
+      listing_type: string;
       bedrooms: number;
       primary_photo_key: string | null;
       description: string;
@@ -143,7 +147,9 @@ export async function searchRoutes(app: FastifyInstance) {
       params.push(50);
       candidates = await prisma.$queryRawUnsafe(
         `
-        SELECT id, title, neighborhood, "rentKesCents" AS rent_kes_cents, bedrooms,
+        SELECT id, title, neighborhood, "rentKesCents" AS rent_kes_cents,
+               "salePriceKes" AS sale_price_kes,
+               "listingType"::text AS listing_type, bedrooms,
                "primaryPhotoKey" AS primary_photo_key, description,
                "verificationStatus"::text AS verification_status,
                ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng,
@@ -160,7 +166,9 @@ export async function searchRoutes(app: FastifyInstance) {
       params.push(limit);
       candidates = await prisma.$queryRawUnsafe(
         `
-        SELECT id, title, neighborhood, "rentKesCents" AS rent_kes_cents, bedrooms,
+        SELECT id, title, neighborhood, "rentKesCents" AS rent_kes_cents,
+               "salePriceKes" AS sale_price_kes,
+               "listingType"::text AS listing_type, bedrooms,
                "primaryPhotoKey" AS primary_photo_key, description,
                "verificationStatus"::text AS verification_status,
                ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lng,

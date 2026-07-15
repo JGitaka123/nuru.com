@@ -10,8 +10,8 @@ import { LangProvider } from "@/lib/i18n";
 const THEME_SCRIPT = `try{var t=localStorage.getItem("nuru-theme");if(t==="dark"||(!t&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark");var l=localStorage.getItem("nuru-lang");if(l)document.documentElement.lang=l;}catch(e){}`;
 
 export const metadata: Metadata = {
-  title: "Nuru — Find your home in Nairobi",
-  description: "AI-native rental marketplace for Kenya. Verified listings, transparent escrow, instant search.",
+  title: "Nuru — Rent or buy your home in Nairobi",
+  description: "Verified rentals and homes for sale across Nairobi. Conversational search, transparent M-Pesa escrow, no bait listings.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f5840b",
+  themeColor: "#d97a1e",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,

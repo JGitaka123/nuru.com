@@ -143,6 +143,11 @@ enum ListingCategory {
   TOWNHOUSE
 }
 
+enum ListingType {
+  RENT
+  SALE
+}
+
 model Listing {
   id              String          @id @default(cuid())
   agentId         String
@@ -151,9 +156,11 @@ model Listing {
   title           String
   description     String          @db.Text
   category        ListingCategory
+  listingType     ListingType     @default(RENT)  // rental vs for-sale
   bedrooms        Int
   bathrooms       Int
-  rentKesCents    Int             // 60_000 KES = 6_000_000
+  rentKesCents    Int             // 60_000 KES = 6_000_000 (monthly rent; RENT only)
+  salePriceKes    Int?            // asking price in whole KES (SALE only; contact-only, no cent precision)
   depositMonths   Int             @default(2)
   serviceChargeKesCents Int       @default(0)
   features        String[]        // ["balcony", "borehole", "backup_generator", ...]

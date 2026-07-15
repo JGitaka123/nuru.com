@@ -19,16 +19,22 @@ import { ForbiddenError, NotFoundError, ValidationError } from "../lib/errors";
 import { logger } from "../lib/logger";
 import { recordEvent } from "./events";
 
-export const ListingInputSchema = z.object({
+// Base field shapes, unrefined — the patch schema derives from this.
+const ListingFields = z.object({
   title: z.string().min(5).max(120),
   description: z.string().min(40).max(2000),
   category: z.enum([
     "BEDSITTER", "STUDIO", "ONE_BR", "TWO_BR", "THREE_BR",
     "FOUR_PLUS_BR", "MAISONETTE", "TOWNHOUSE",
   ]),
+  listingType: z.enum(["RENT", "SALE"]).default("RENT"),
   bedrooms: z.number().int().min(0).max(10),
   bathrooms: z.number().int().min(1).max(10),
-  rentKesCents: z.number().int().min(500_000).max(100_000_000), // 5K-1M KES per month
+  // For RENT this is the monthly rent; for SALE it's unused (defaults to 0
+  // so downstream rent-based analytics stay numeric). Validated below.
+  rentKesCents: z.number().int().min(0).max(100_000_000).default(0),
+  // Asking price for SALE listings, in whole KES (50K up to 2B KES).
+  salePriceKes: z.number().int().min(50_000).max(2_000_000_000).optional(),
   depositMonths: z.number().int().min(0).max(6).default(2),
   serviceChargeKesCents: z.number().int().min(0).default(0),
   features: z.array(z.string()).default([]),
@@ -42,9 +48,15 @@ export const ListingInputSchema = z.object({
   lng: z.number().min(33.9).max(41.9).optional(),
 });
 
+// A RENT listing needs a real monthly rent; a SALE listing needs an asking price.
+export const ListingInputSchema = ListingFields.refine(
+  (v) => (v.listingType === "SALE" ? v.salePriceKes !== undefined : v.rentKesCents >= 500_000),
+  { message: "RENT needs rentKesCents ≥ 5000 KES; SALE needs salePriceKes", path: ["rentKesCents"] },
+);
+
 export type ListingInput = z.infer<typeof ListingInputSchema>;
 
-export const ListingPatchSchema = ListingInputSchema.partial();
+export const ListingPatchSchema = ListingFields.partial();
 export type ListingPatch = z.infer<typeof ListingPatchSchema>;
 
 export async function createListing(agentId: string, input: ListingInput) {
@@ -185,8 +197,10 @@ export async function listMyListings(agentId: string, status?: ListingStatus) {
 export interface PublicListingFilters {
   neighborhood?: string;
   category?: ListingCategory;
+  listingType?: "RENT" | "SALE";
   bedroomsMin?: number;
   rentMaxKesCents?: number;
+  salePriceMaxKes?: number;
   cursor?: string;
   limit?: number;
 }
@@ -199,15 +213,18 @@ export async function listPublicListings(filters: PublicListingFilters) {
       fraudScore: { lt: 60 },
       ...(filters.neighborhood ? { neighborhood: filters.neighborhood } : {}),
       ...(filters.category ? { category: filters.category } : {}),
+      listingType: filters.listingType ?? "RENT",
       ...(filters.bedroomsMin !== undefined ? { bedrooms: { gte: filters.bedroomsMin } } : {}),
       ...(filters.rentMaxKesCents !== undefined ? { rentKesCents: { lte: filters.rentMaxKesCents } } : {}),
+      ...(filters.salePriceMaxKes !== undefined ? { salePriceKes: { lte: filters.salePriceMaxKes } } : {}),
     },
     orderBy: { publishedAt: "desc" },
     take: limit + 1,
     ...(filters.cursor ? { cursor: { id: filters.cursor }, skip: 1 } : {}),
     select: {
       id: true, title: true, neighborhood: true, estate: true, bedrooms: true,
-      bathrooms: true, category: true, rentKesCents: true, depositMonths: true,
+      bathrooms: true, category: true, listingType: true, rentKesCents: true,
+      salePriceKes: true, depositMonths: true,
       features: true, primaryPhotoKey: true, photoKeys: true,
       verificationStatus: true, publishedAt: true, fraudScore: true,
     },

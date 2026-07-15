@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import MapPinPicker from "@/components/MapPinPicker";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
@@ -31,17 +31,20 @@ export default function NewListingPage() {
     category: "TWO_BR",
     bedrooms: 2,
     bathrooms: 1,
+    listingType: "RENT" as "RENT" | "SALE",
     rentKes: 60000,
+    salePriceKes: 15000000,
     depositMonths: 2,
     neighborhood: "Kilimani",
     estate: "",
     features: [] as string[],
   });
 
-  if (typeof window !== "undefined" && !getToken()) {
-    router.push("/login");
-    return null;
-  }
+  // Redirect unauthenticated users after mount — doing this during render
+  // causes an SSR/client hydration mismatch.
+  useEffect(() => {
+    if (!getToken()) router.push("/login");
+  }, [router]);
 
   async function handleUpload(file: File) {
     setUploading(true);
@@ -82,8 +85,11 @@ export default function NewListingPage() {
           category: form.category,
           bedrooms: form.bedrooms,
           bathrooms: form.bathrooms,
-          rentKesCents: form.rentKes * 100,
-          depositMonths: form.depositMonths,
+          listingType: form.listingType,
+          ...(form.listingType === "SALE"
+            ? { rentKesCents: 0, salePriceKes: form.salePriceKes }
+            : { rentKesCents: form.rentKes * 100 }),
+          depositMonths: form.listingType === "SALE" ? 0 : form.depositMonths,
           features: form.features,
           neighborhood: form.neighborhood,
           estate: form.estate || undefined,
@@ -165,6 +171,16 @@ export default function NewListingPage() {
             onChange={(lat, lng) => setPin({ lat, lng })}
           />
         </Field>
+        <Field label="Listing for">
+          <div className="inline-flex rounded-lg border border-ink-200 bg-ink-50 p-1 text-sm font-medium">
+            {(["RENT", "SALE"] as const).map((lt) => (
+              <button key={lt} type="button" onClick={() => setForm({ ...form, listingType: lt })}
+                className={`rounded-md px-4 py-1.5 transition ${form.listingType === lt ? "bg-ink-900 text-ink-50" : "text-ink-600 hover:text-ink-900"}`}>
+                {lt === "RENT" ? "Rent" : "Sale"}
+              </button>
+            ))}
+          </div>
+        </Field>
         <Field label="Type">
           <select
             value={form.category}
@@ -188,6 +204,15 @@ export default function NewListingPage() {
             className="w-full rounded-lg border border-ink-200 px-3 py-2"
           />
         </Field>
+        {form.listingType === "SALE" ? (
+          <Field label="Asking price (KES)">
+            <input
+              type="number" min={50000} step={100000} value={form.salePriceKes}
+              onChange={(e) => setForm({ ...form, salePriceKes: Number(e.target.value) })}
+              className="w-full rounded-lg border border-ink-200 px-3 py-2"
+            />
+          </Field>
+        ) : (
         <Field label="Monthly rent (KES)">
           <input
             type="number" min={5000} step={1000} value={form.rentKes}
@@ -195,6 +220,8 @@ export default function NewListingPage() {
             className="w-full rounded-lg border border-ink-200 px-3 py-2"
           />
         </Field>
+        )}
+        {form.listingType === "RENT" && (
         <Field label="Deposit (months)">
           <input
             type="number" min={0} max={6} value={form.depositMonths}
@@ -202,6 +229,7 @@ export default function NewListingPage() {
             className="w-full rounded-lg border border-ink-200 px-3 py-2"
           />
         </Field>
+        )}
         <div className="sm:col-span-2">
           <Field label="Description">
             <textarea

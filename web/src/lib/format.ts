@@ -5,6 +5,21 @@ export function formatKes(cents: number, withPrefix = true): string {
   return withPrefix ? `KES ${formatted}` : formatted;
 }
 
+/** Whole KES (sale prices) → "KES 42M" / "KES 850K" for compact display. */
+export function formatKesShort(kes: number): string {
+  if (kes >= 1_000_000) {
+    const m = kes / 1_000_000;
+    return `KES ${m % 1 === 0 ? m : m.toFixed(1)}M`;
+  }
+  if (kes >= 1_000) return `KES ${Math.round(kes / 1_000)}K`;
+  return `KES ${kes.toLocaleString("en-KE")}`;
+}
+
+/** Whole KES (sale prices) → "KES 42,000,000". */
+export function formatKesFull(kes: number): string {
+  return `KES ${kes.toLocaleString("en-KE")}`;
+}
+
 /** "TWO_BR" → "2 bedroom", "BEDSITTER" → "Bedsitter". */
 export function formatCategory(c: string): string {
   switch (c) {
