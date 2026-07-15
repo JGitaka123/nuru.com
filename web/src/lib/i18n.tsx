@@ -27,14 +27,14 @@ const en = {
   "nav.pricing": "Pricing",
   "nav.forAgents": "For agents",
   "nav.signIn": "Sign in",
-  "footer.tagline": "Nuru. Long-term rentals in Nairobi.",
+  "footer.tagline": "Nuru. Find home, anywhere in Kenya.",
   "footer.privacy": "Privacy",
   "footer.contact": "Contact",
 
   // home
-  "home.heroTitle": "Find your next home in Nairobi.",
+  "home.heroTitle": "Find home, anywhere in Kenya.",
   "home.heroSub":
-    "Conversational search. Verified listings. Deposits held safely in M-Pesa escrow until you confirm move-in.",
+    "Conversational search across every county. Verified listings. Deposits held safely in M-Pesa escrow until you confirm move-in.",
   "home.searchPlaceholder": "2BR Kilimani under 60K with parking",
   "home.search": "Search",
   "home.try": "Try:",
@@ -47,6 +47,9 @@ const en = {
   "home.agentTitle": "Are you an agent?",
   "home.agentBody": "List a property in 60 seconds. Photos in → AI-drafted listing out. You review and publish.",
   "home.getStarted": "Get started →",
+  "home.browseTitle": "Find homes across Kenya",
+  "home.browseSub": "From Nairobi to Mombasa, Kisumu to Eldoret — explore the markets we cover.",
+  "home.browseAll": "Browse all counties →",
 
   // search page
   "search.placeholder": "What are you looking for?",
@@ -100,13 +103,13 @@ const sw: Record<I18nKey, string> = {
   "nav.pricing": "Bei",
   "nav.forAgents": "Kwa mawakala",
   "nav.signIn": "Ingia",
-  "footer.tagline": "Nuru. Nyumba za kupanga Nairobi.",
+  "footer.tagline": "Nuru. Pata nyumba, popote Kenya.",
   "footer.privacy": "Faragha",
   "footer.contact": "Wasiliana nasi",
 
-  "home.heroTitle": "Pata nyumba yako mpya Nairobi.",
+  "home.heroTitle": "Pata nyumba, popote Kenya.",
   "home.heroSub":
-    "Tafuta kwa lugha yako. Nyumba zilizohakikiwa. Amana yako iko salama kwenye escrow ya M-Pesa hadi uthibitishe kuhamia.",
+    "Tafuta kwa lugha yako kote nchini. Nyumba zilizohakikiwa. Amana yako iko salama kwenye escrow ya M-Pesa hadi uthibitishe kuhamia.",
   "home.searchPlaceholder": "2BR Kilimani chini ya 60K na parking",
   "home.search": "Tafuta",
   "home.try": "Jaribu:",
@@ -119,6 +122,9 @@ const sw: Record<I18nKey, string> = {
   "home.agentTitle": "Wewe ni wakala?",
   "home.agentBody": "Weka nyumba kwa sekunde 60. Picha ndani → tangazo la AI nje. Wewe unakagua na kuchapisha.",
   "home.getStarted": "Anza sasa →",
+  "home.browseTitle": "Pata nyumba kote Kenya",
+  "home.browseSub": "Kutoka Nairobi hadi Mombasa, Kisumu hadi Eldoret — chunguza maeneo tunayohudumia.",
+  "home.browseAll": "Angalia kaunti zote →",
 
   "search.placeholder": "Unatafuta nini?",
   "search.popularAreas": "Maeneo maarufu:",

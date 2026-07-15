@@ -71,6 +71,20 @@ describe("heuristicParseSearchQuery", () => {
     const f = heuristicParseSearchQuery("2br with parking, borehole and cctv");
     expect(f.mustHave).toEqual(expect.arrayContaining(["parking", "borehole", "cctv"]));
   });
+
+  it("recognises locations across Kenya, not just Nairobi", () => {
+    expect(heuristicParseSearchQuery("2br Nyali Mombasa 70k").neighborhoods).toContain("Nyali");
+    expect(heuristicParseSearchQuery("house for sale in Nakuru").neighborhoods).toContain("Nakuru");
+    expect(heuristicParseSearchQuery("bedsitter Elgon View Eldoret").neighborhoods).toContain("Elgon View");
+    expect(heuristicParseSearchQuery("apartment Kisumu Milimani").neighborhoods).toContain("Milimani");
+  });
+
+  it("prefers a specific area over its county when both are named", () => {
+    // "Nyali Mombasa" → narrow to Nyali, don't also filter the whole county.
+    const f = heuristicParseSearchQuery("2br Nyali Mombasa 70k");
+    expect(f.neighborhoods).toContain("Nyali");
+    expect(f.neighborhoods).not.toContain("Mombasa");
+  });
 });
 
 // Live evals — real Claude calls, gated on RUN_REAL_AI_EVALS. Text-only

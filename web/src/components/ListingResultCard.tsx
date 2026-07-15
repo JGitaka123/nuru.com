@@ -8,6 +8,7 @@ export interface ListingCardItem {
   id: string;
   title: string;
   neighborhood: string;
+  county?: string | null;
   bedrooms: number;
   rentKesCents: number;
   listingType?: "RENT" | "SALE";
@@ -58,6 +59,9 @@ export default function ListingResultCard({ item }: { item: ListingCardItem }) {
             </h2>
             <p className="mt-1 text-sm text-ink-500">
               {item.neighborhood}{item.estate ? `, ${item.estate}` : ""}
+              {item.county && item.county !== item.neighborhood && (
+                <span className="text-ink-400"> · {item.county}</span>
+              )}
             </p>
           </div>
 

@@ -52,14 +52,14 @@ export function unsubscribeUrl(email: string): string {
 export function withFooter(body: string, email: string, marketing: boolean): { text: string; html: string } {
   const unsubscribe = unsubscribeUrl(email);
   const footerText = marketing
-    ? `\n\n--\nNuru.com · Long-term rentals in Nairobi · Westlands, Nairobi, Kenya\nUnsubscribe: ${unsubscribe}\nWe never share your email. ODPC reg: <pending>.`
+    ? `\n\n--\nNuru.com · Homes across Kenya · Westlands, Nairobi, Kenya\nUnsubscribe: ${unsubscribe}\nWe never share your email. ODPC reg: <pending>.`
     : `\n\n--\nNuru Homes · Westlands, Nairobi, Kenya\nNeed help? hello@nuruhomes.com`;
   const text = body + footerText;
   const html = `<div style="font-family:system-ui,sans-serif;line-height:1.5;color:#1f232c">
   ${body.split("\n").map((l) => `<p style="margin:0 0 12px">${escapeHtml(l)}</p>`).join("")}
   <hr style="border:0;border-top:1px solid #ecedf2;margin:24px 0"/>
   <p style="font-size:12px;color:#878fa5">
-    Nuru.com · Long-term rentals in Nairobi · Westlands, Nairobi, Kenya<br/>
+    Nuru.com · Homes across Kenya · Westlands, Nairobi, Kenya<br/>
     ${marketing ? `<a href="${unsubscribe}" style="color:#878fa5">Unsubscribe</a> · ` : ""}
     ODPC reg: pending
   </p>

@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import MapPinPicker from "@/components/MapPinPicker";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
-
-const NEIGHBORHOODS = ["Kilimani", "Westlands", "Kileleshwa", "Lavington", "Parklands"];
+import { KENYA_COUNTIES } from "@/lib/locations";
 const CATEGORIES = [
   ["BEDSITTER", "Bedsitter"],
   ["STUDIO", "Studio"],
@@ -35,6 +34,7 @@ export default function NewListingPage() {
     rentKes: 60000,
     salePriceKes: 15000000,
     depositMonths: 2,
+    county: "Nairobi",
     neighborhood: "Kilimani",
     estate: "",
     features: [] as string[],
@@ -91,6 +91,7 @@ export default function NewListingPage() {
             : { rentKesCents: form.rentKes * 100 }),
           depositMonths: form.listingType === "SALE" ? 0 : form.depositMonths,
           features: form.features,
+          county: form.county,
           neighborhood: form.neighborhood,
           estate: form.estate || undefined,
           photoKeys: photos.map((p) => p.key),
@@ -147,14 +148,29 @@ export default function NewListingPage() {
             placeholder="e.g. 2BR with parking in Yaya area"
           />
         </Field>
-        <Field label="Neighborhood">
+        <Field label="County">
           <select
-            value={form.neighborhood}
-            onChange={(e) => setForm({ ...form, neighborhood: e.target.value })}
+            value={form.county}
+            onChange={(e) => setForm({ ...form, county: e.target.value })}
             className="w-full rounded-lg border border-ink-200 px-3 py-2"
           >
-            {NEIGHBORHOODS.map((n) => <option key={n}>{n}</option>)}
+            {KENYA_COUNTIES.map((c) => <option key={c.slug} value={c.county}>{c.county}</option>)}
           </select>
+        </Field>
+        <Field label="Area / estate">
+          <input
+            value={form.neighborhood}
+            onChange={(e) => setForm({ ...form, neighborhood: e.target.value })}
+            required
+            list="area-suggestions"
+            className="w-full rounded-lg border border-ink-200 px-3 py-2"
+            placeholder="e.g. Nyali, Kilimani, Milimani"
+          />
+          <datalist id="area-suggestions">
+            {(KENYA_COUNTIES.find((c) => c.county === form.county)?.areas ?? []).map((a) => (
+              <option key={a} value={a} />
+            ))}
+          </datalist>
         </Field>
         <Field label="Estate (optional)">
           <input

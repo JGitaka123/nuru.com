@@ -58,7 +58,9 @@ export async function searchRoutes(app: FastifyInstance) {
     let p = 1;
 
     if (f.neighborhoods.length) {
-      filterClauses.push(`neighborhood = ANY($${p}::text[])`);
+      // A parsed location may be an area (neighborhood) or a county name.
+      // Match either so "houses in Nakuru" finds listings across the county.
+      filterClauses.push(`(neighborhood = ANY($${p}::text[]) OR county = ANY($${p}::text[]))`);
       params.push(f.neighborhoods);
       p++;
     }
