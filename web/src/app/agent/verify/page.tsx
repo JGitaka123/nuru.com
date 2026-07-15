@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
+import { btnBrand } from "@/components/ui";
 
 export default function AgentVerifyPage() {
   const router = useRouter();
@@ -30,8 +31,11 @@ export default function AgentVerifyPage() {
   }
 
   return (
-    <form onSubmit={submit} className="mx-auto max-w-md space-y-4 rounded-xl bg-surface p-8 ring-1 ring-ink-200">
-      <h1 className="text-2xl font-bold">Verify your agent account</h1>
+    <form onSubmit={submit} className="mx-auto max-w-md space-y-4 rounded-2xl border border-ink-200 bg-surface p-8 shadow-card">
+      <div>
+        <p className="font-sans text-xs font-semibold uppercase tracking-[0.16em] text-brand-700">Agent workspace</p>
+        <h1 className="mt-1.5 font-serif text-2xl text-ink-900">Verify your agent account</h1>
+      </div>
       <p className="text-sm text-ink-600">We&apos;ll match your KRA PIN against the registry. Your ID number is hashed; we never store the raw value.</p>
 
       <Field label="Full name (as on your ID)">
@@ -39,7 +43,7 @@ export default function AgentVerifyPage() {
           value={form.fullName}
           onChange={(e) => setForm({ ...form, fullName: e.target.value })}
           required minLength={3}
-          className="w-full rounded-lg border border-ink-200 px-3 py-2"
+          className="w-full rounded-xl border border-ink-200 bg-surface px-3 py-2"
         />
       </Field>
       <Field label="National ID number">
@@ -48,7 +52,7 @@ export default function AgentVerifyPage() {
           value={form.nationalId}
           onChange={(e) => setForm({ ...form, nationalId: e.target.value.replace(/\D/g, "") })}
           required pattern="\d{6,10}"
-          className="w-full rounded-lg border border-ink-200 px-3 py-2"
+          className="w-full rounded-xl border border-ink-200 bg-surface px-3 py-2"
         />
       </Field>
       <Field label="KRA PIN">
@@ -57,7 +61,7 @@ export default function AgentVerifyPage() {
           onChange={(e) => setForm({ ...form, kraPin: e.target.value.toUpperCase() })}
           required pattern="[AP]\d{9}[A-Z]"
           placeholder="A123456789Z"
-          className="w-full rounded-lg border border-ink-200 px-3 py-2 uppercase"
+          className="w-full rounded-xl border border-ink-200 bg-surface px-3 py-2 uppercase"
         />
       </Field>
       <Field label="Agency name">
@@ -65,12 +69,12 @@ export default function AgentVerifyPage() {
           value={form.agencyName}
           onChange={(e) => setForm({ ...form, agencyName: e.target.value })}
           required minLength={2}
-          className="w-full rounded-lg border border-ink-200 px-3 py-2"
+          className="w-full rounded-xl border border-ink-200 bg-surface px-3 py-2"
         />
       </Field>
 
-      {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
-      <button disabled={busy} className="w-full rounded-lg bg-brand-500 py-3 font-semibold text-white hover:bg-brand-600 disabled:opacity-50">
+      {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+      <button disabled={busy} className={`w-full justify-center py-3 ${btnBrand} disabled:opacity-50`}>
         {busy ? "Submitting..." : "Submit for review"}
       </button>
     </form>

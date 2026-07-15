@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, getToken, type Listing } from "@/lib/api";
 import { formatKes, formatCategory, photoUrl } from "@/lib/format";
+import { Panel, StatusBadge, btnBrand, btnSecondary } from "@/components/ui";
 
 const NEXT_TRANSITIONS: Record<string, string[]> = {
   DRAFT: ["PENDING_REVIEW", "REMOVED"],
@@ -46,7 +47,7 @@ export default function AgentListingPage({ params }: { params: { id: string } })
     }
   }
 
-  if (error) return <div className="rounded-lg bg-red-50 p-4 text-red-700">{error}</div>;
+  if (error) return <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>;
   if (!listing) return <div className="text-ink-500">Loading…</div>;
 
   const transitions = NEXT_TRANSITIONS[listing.status] ?? [];
@@ -57,14 +58,14 @@ export default function AgentListingPage({ params }: { params: { id: string } })
 
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{listing.title || "Untitled"}</h1>
-          <p className="mt-1 text-ink-600">{listing.neighborhood} · {formatCategory(listing.category)} · {formatKes(listing.rentKesCents)}/mo</p>
+          <h1 className="font-serif text-3xl text-ink-900 sm:text-4xl">{listing.title || "Untitled"}</h1>
+          <p className="mt-1.5 text-ink-500">{listing.neighborhood} · {formatCategory(listing.category)} · {formatKes(listing.rentKesCents)}/mo</p>
         </div>
-        <span className="rounded-full bg-ink-100 px-3 py-1 text-sm font-medium">{listing.status}</span>
+        <StatusBadge status={listing.status} />
       </div>
 
       {listing.fraudScore >= 60 && (
-        <div className="rounded-lg bg-red-50 p-4 ring-1 ring-red-200">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
           <p className="font-medium text-red-800">Risk score {listing.fraudScore}/100</p>
           <p className="mt-1 text-sm text-red-700">Review the photos and pricing. Listings with high risk scores cannot be published.</p>
         </div>
@@ -73,14 +74,14 @@ export default function AgentListingPage({ params }: { params: { id: string } })
       <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {listing.photoKeys.map((k) => (
           // eslint-disable-next-line @next/next/no-img-element
-          <img key={k} src={photoUrl(k)!} alt="" className="aspect-square rounded-lg object-cover ring-1 ring-ink-200" />
+          <img key={k} src={photoUrl(k)!} alt="" className="aspect-square rounded-xl border border-ink-200 object-cover" />
         ))}
       </div>
 
-      <section className="rounded-xl bg-surface p-6 ring-1 ring-ink-200">
-        <h2 className="font-semibold">Description</h2>
+      <Panel>
+        <h2 className="font-serif text-xl text-ink-900">Description</h2>
         <p className="mt-2 whitespace-pre-line text-ink-700">{listing.description}</p>
-      </section>
+      </Panel>
 
       <div className="flex flex-wrap gap-2">
         {transitions.map((t) => (
@@ -88,7 +89,7 @@ export default function AgentListingPage({ params }: { params: { id: string } })
             key={t}
             onClick={() => transition(t)}
             disabled={busy}
-            className="rounded-lg bg-brand-500 px-4 py-2 font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+            className={`${btnBrand} disabled:opacity-50`}
           >
             {t === "PENDING_REVIEW" ? "Submit for review" :
              t === "ACTIVE" ? "Publish" :
@@ -100,10 +101,10 @@ export default function AgentListingPage({ params }: { params: { id: string } })
       </div>
 
       <div className="flex flex-wrap gap-3 border-t border-ink-200 pt-4 text-sm">
-        <Link href={`/agent/${id}/applications`} className="rounded-lg border border-ink-300 px-3 py-1.5 hover:bg-ink-50">
+        <Link href={`/agent/${id}/applications`} className={btnSecondary}>
           View applications
         </Link>
-        <Link href="/agent/inbox" className="rounded-lg border border-ink-300 px-3 py-1.5 hover:bg-ink-50">
+        <Link href="/agent/inbox" className={btnSecondary}>
           Inbox
         </Link>
       </div>

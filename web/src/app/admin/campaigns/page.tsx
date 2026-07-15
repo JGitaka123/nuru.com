@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
 import { toast } from "@/components/Toast";
+import { PageHeading, AdminNav, btnBrand, btnSecondary } from "@/components/ui";
 
 interface Campaign {
   id: string;
@@ -111,31 +111,34 @@ export default function AdminCampaignsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Link href="/admin" className="text-sm text-ink-500 hover:underline">← Admin</Link>
-        <button onClick={() => setShowCreate((v) => !v)} className="rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600">
-          {showCreate ? "Close" : "+ New campaign"}
-        </button>
-      </div>
-      <h1 className="text-3xl font-bold">Outreach campaigns</h1>
-      <p className="text-ink-600">Sonnet-drafted personalized emails to qualified leads. Compliant with Kenya DPA: every email includes one-click unsubscribe.</p>
+    <div className="space-y-8">
+      <PageHeading
+        eyebrow="Operations"
+        title="Outreach campaigns"
+        subtitle="Sonnet-drafted personalized emails to qualified leads. Compliant with Kenya DPA: every email includes one-click unsubscribe."
+        actions={
+          <button onClick={() => setShowCreate((v) => !v)} className={btnBrand}>
+            {showCreate ? "Close" : "+ New campaign"}
+          </button>
+        }
+      />
+      <AdminNav active="/admin/campaigns" />
 
       {showCreate && (
-        <form onSubmit={create} className="grid gap-3 rounded-xl bg-surface p-4 ring-1 ring-ink-200">
-          <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required minLength={3} className="rounded-lg border border-ink-200 px-3 py-2" />
-          <textarea placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} className="rounded-lg border border-ink-200 px-3 py-2" />
+        <form onSubmit={create} className="grid gap-3 rounded-2xl border border-ink-200 bg-surface p-5 shadow-card">
+          <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required minLength={3} className="rounded-xl border border-ink-200 bg-surface px-3 py-2" />
+          <textarea placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} className="rounded-xl border border-ink-200 bg-surface px-3 py-2" />
           <label className="block">
             <span className="text-sm text-ink-600">Email template</span>
-            <select value={form.templatePromptKey} onChange={(e) => setForm({ ...form, templatePromptKey: e.target.value })} className="mt-1 w-full rounded-lg border border-ink-200 px-3 py-2">
+            <select value={form.templatePromptKey} onChange={(e) => setForm({ ...form, templatePromptKey: e.target.value })} className="mt-1 w-full rounded-xl border border-ink-200 bg-surface px-3 py-2">
               {TEMPLATES.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
             </select>
           </label>
           <label className="block">
             <span className="text-sm text-ink-600">Daily cap</span>
-            <input type="number" min={1} max={2000} value={form.dailyCap} onChange={(e) => setForm({ ...form, dailyCap: Number(e.target.value) })} className="mt-1 w-full rounded-lg border border-ink-200 px-3 py-2" />
+            <input type="number" min={1} max={2000} value={form.dailyCap} onChange={(e) => setForm({ ...form, dailyCap: Number(e.target.value) })} className="mt-1 w-full rounded-xl border border-ink-200 bg-surface px-3 py-2" />
           </label>
-          <button disabled={busy === "create" || !form.name} className="rounded-lg bg-brand-500 px-3 py-2 font-medium text-white hover:bg-brand-600 disabled:opacity-50">
+          <button disabled={busy === "create" || !form.name} className={`${btnBrand} disabled:opacity-50`}>
             {busy === "create" ? "Creating…" : "Create campaign (paused)"}
           </button>
         </form>
@@ -148,21 +151,21 @@ export default function AdminCampaignsPage() {
       ) : (
         <ul className="space-y-3">
           {items.map((c) => (
-            <li key={c.id} className="rounded-xl border border-ink-200 bg-surface p-4">
+            <li key={c.id} className="rounded-2xl border border-ink-200 bg-surface p-5 shadow-card">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="font-semibold">{c.name}</p>
+                  <p className="font-serif text-lg text-ink-900">{c.name}</p>
                   <p className="text-sm text-ink-500">{c.templatePromptKey} · daily cap {c.dailyCap}</p>
                 </div>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${c.isActive ? "bg-green-100 text-green-800" : "bg-ink-100 text-ink-700"}`}>
+                <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${c.isActive ? "bg-emerald-100 text-emerald-800" : "bg-ink-100 text-ink-700"}`}>
                   {c.isActive ? "Active" : "Paused"}
                 </span>
               </div>
               <div className="mt-3 flex gap-2">
-                <button disabled={busy === c.id} onClick={() => toggleActive(c)} className="rounded-lg border border-ink-300 px-3 py-1 text-sm hover:bg-ink-50 disabled:opacity-50">
+                <button disabled={busy === c.id} onClick={() => toggleActive(c)} className={`${btnSecondary} disabled:opacity-50`}>
                   {c.isActive ? "Pause" : "Activate"}
                 </button>
-                <button disabled={busy === c.id || !c.isActive} onClick={() => enroll(c)} className="rounded-lg bg-brand-500 px-3 py-1 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50">
+                <button disabled={busy === c.id || !c.isActive} onClick={() => enroll(c)} className={`${btnBrand} disabled:opacity-50`}>
                   Enroll qualified leads
                 </button>
               </div>

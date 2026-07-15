@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
 import { toast } from "@/components/Toast";
+import { PageHeading, Panel, StatusBadge } from "@/components/ui";
 
 interface Plan {
   id: string;
@@ -106,13 +107,17 @@ function AgentBillingPageInner() {
     : null;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Billing</h1>
+    <div className="space-y-8">
+      <PageHeading eyebrow="Agent workspace" title="Billing" />
 
-      <section className="rounded-xl bg-surface p-6 ring-1 ring-ink-200">
-        <p className="text-sm text-ink-500">Current plan</p>
-        <p className="text-2xl font-bold">{sub.plan.name}</p>
-        <p className="text-sm text-ink-500">{sub.status.replace("_", " ").toLowerCase()}</p>
+      <Panel>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-sans text-xs font-medium uppercase tracking-[0.12em] text-ink-400">Current plan</p>
+            <p className="mt-1 font-serif text-2xl font-semibold text-ink-900">{sub.plan.name}</p>
+          </div>
+          <StatusBadge status={sub.status} />
+        </div>
 
         {sub.status === "TRIALING" && trialDaysLeft !== null && (
           <p className="mt-2 text-sm">Trial: <strong>{trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"}</strong> remaining.</p>
@@ -133,32 +138,32 @@ function AgentBillingPageInner() {
             Cancel at period end
           </button>
         )}
-      </section>
+      </Panel>
 
-      <section>
-        <h2 className="text-xl font-semibold">Choose a plan</h2>
-        <div className="mt-3 flex items-center gap-3">
+      <section className="space-y-3">
+        <h2 className="font-serif text-xl text-ink-900">Choose a plan</h2>
+        <div className="flex items-center gap-3">
           <input
             placeholder="Promo code (optional)"
             value={promo}
             onChange={(e) => setPromo(e.target.value.toUpperCase())}
-            className="rounded-lg border border-ink-200 px-3 py-2 text-sm"
+            className="rounded-xl border border-ink-200 bg-surface px-3 py-2 text-sm"
           />
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {plans.filter((p) => p.id !== "TRIAL").map((p) => {
             const isCurrent = sub.planTier === p.id;
             const desired = desiredPlan === p.id;
             return (
-              <article key={p.id} className={`rounded-xl bg-surface p-4 ring-1 ${desired ? "ring-2 ring-brand-500" : "ring-ink-200"}`}>
-                <h3 className="text-lg font-bold">{p.name}</h3>
+              <article key={p.id} className={`rounded-2xl border bg-surface p-5 shadow-card ${desired ? "border-brand-500 ring-1 ring-brand-500" : "border-ink-200"}`}>
+                <h3 className="font-serif text-lg text-ink-900">{p.name}</h3>
                 <p className="text-sm text-ink-500">{p.blurb}</p>
-                <p className="mt-2 text-2xl font-bold">KES {(p.monthlyKesCents / 100).toLocaleString("en-KE")}<span className="text-sm font-normal text-ink-500">/mo</span></p>
+                <p className="mt-2 font-serif text-2xl font-semibold text-ink-900">KES {(p.monthlyKesCents / 100).toLocaleString("en-KE")}<span className="text-sm font-normal text-ink-500">/mo</span></p>
                 <p className="text-xs text-ink-500">{p.maxActiveListings === null ? "Unlimited" : p.maxActiveListings} listings</p>
                 <button
                   disabled={busy === p.id || isCurrent}
                   onClick={() => changePlan(p.id)}
-                  className={`mt-3 w-full rounded-lg py-2 text-sm font-semibold ${isCurrent ? "bg-ink-100 text-ink-500" : "bg-brand-500 text-white hover:bg-brand-600"} disabled:opacity-50`}
+                  className={`mt-3 w-full rounded-xl py-2 text-sm font-semibold ${isCurrent ? "bg-ink-100 text-ink-500" : "bg-brand-500 text-white hover:bg-brand-600"} disabled:opacity-50`}
                 >
                   {isCurrent ? "Current" : busy === p.id ? "Initiating…" : "Switch to " + p.name}
                 </button>
@@ -168,31 +173,33 @@ function AgentBillingPageInner() {
         </div>
       </section>
 
-      <section>
-        <h2 className="text-xl font-semibold">Invoices</h2>
+      <section className="space-y-3">
+        <h2 className="font-serif text-xl text-ink-900">Invoices</h2>
         {sub.invoices.length === 0 ? (
           <p className="text-ink-500">No invoices yet.</p>
         ) : (
-          <table className="w-full overflow-hidden rounded-xl bg-surface text-sm ring-1 ring-ink-200">
-            <thead className="bg-ink-50 text-left text-xs uppercase tracking-wide text-ink-500">
-              <tr>
-                <th className="px-3 py-2">Date</th>
-                <th className="px-3 py-2">Amount</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">Receipt</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sub.invoices.map((i) => (
-                <tr key={i.id} className="border-t border-ink-100">
-                  <td className="px-3 py-2">{new Date(i.dueAt).toLocaleDateString("en-KE")}</td>
-                  <td className="px-3 py-2">KES {(i.amountKesCents / 100).toLocaleString("en-KE")}</td>
-                  <td className="px-3 py-2">{i.status}</td>
-                  <td className="px-3 py-2 text-ink-500">{i.mpesaReceipt ?? "—"}</td>
+          <div className="overflow-hidden rounded-2xl border border-ink-200 shadow-card">
+            <table className="w-full bg-surface text-sm">
+              <thead className="border-b border-ink-100 text-left text-xs font-medium uppercase tracking-wide text-ink-400">
+                <tr>
+                  <th className="px-4 py-3">Date</th>
+                  <th className="px-4 py-3">Amount</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Receipt</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-ink-100">
+                {sub.invoices.map((i) => (
+                  <tr key={i.id}>
+                    <td className="px-4 py-3">{new Date(i.dueAt).toLocaleDateString("en-KE")}</td>
+                    <td className="px-4 py-3">KES {(i.amountKesCents / 100).toLocaleString("en-KE")}</td>
+                    <td className="px-4 py-3">{i.status}</td>
+                    <td className="px-4 py-3 text-ink-500">{i.mpesaReceipt ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </div>

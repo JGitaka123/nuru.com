@@ -58,38 +58,38 @@ export default function AgentApplicationsPage({ params }: { params: { id: string
   }
 
   if (loading) return <div className="text-ink-500">Loading…</div>;
-  if (error) return <div className="rounded-lg bg-red-50 p-4 text-red-700">{error}</div>;
+  if (error) return <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <Link href={`/agent/${listingId}`} className="text-sm text-ink-500 hover:underline">← Back to listing</Link>
-      <h1 className="text-3xl font-bold">Applications</h1>
+      <h1 className="font-serif text-3xl text-ink-900 sm:text-4xl">Applications</h1>
 
       {items.length === 0 ? (
         <p className="text-ink-500">No applications yet.</p>
       ) : (
         <ul className="space-y-3">
           {items.map((a) => (
-            <li key={a.id} className="rounded-xl border border-ink-200 bg-surface p-4">
+            <li key={a.id} className="rounded-2xl border border-ink-200 bg-surface p-5 shadow-card">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="font-semibold">
+                  <p className="font-serif text-lg text-ink-900">
                     {a.tenant.name ?? a.tenant.phoneE164}
                     {a.tenant.verificationStatus === "VERIFIED" && (
-                      <span className="ml-2 text-xs text-green-700">✓ Verified</span>
+                      <span className="ml-2 text-xs text-emerald-700">✓ Verified</span>
                     )}
                   </p>
                   <p className="text-sm text-ink-500">
                     {a.employerName ?? "—"} · {a.monthlyIncomeKesCents ? `${formatKes(a.monthlyIncomeKesCents)}/mo` : "(income not stated)"}
                   </p>
                 </div>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[a.status]}`}>
+                <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGE[a.status]}`}>
                   {a.status.replace("_", " ")}
                 </span>
               </div>
 
               {a.aiRecommendation && (
-                <div className="mt-3 rounded-lg bg-amber-50 p-3 text-sm">
+                <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm">
                   <p>
                     <strong>AI screen:</strong> {a.aiRecommendation}
                   </p>
@@ -102,14 +102,14 @@ export default function AgentApplicationsPage({ params }: { params: { id: string
                   <button
                     disabled={busy === a.id}
                     onClick={() => decide(a.id, "APPROVED")}
-                    className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                    className="rounded-xl bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
                   >
                     Approve
                   </button>
                   <button
                     disabled={busy === a.id}
                     onClick={() => decide(a.id, "REJECTED")}
-                    className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+                    className="rounded-xl border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
                   >
                     Reject
                   </button>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
 import { photoUrl } from "@/lib/format";
+import { PageHeading } from "@/components/ui";
 
 interface InquiryRow {
   id: string;
@@ -39,27 +40,30 @@ export default function AgentInboxPage() {
   }
 
   if (loading) return <div className="text-ink-500">Loading…</div>;
-  if (error) return <div className="rounded-lg bg-red-50 p-4 text-red-700">{error}</div>;
+  if (error) return <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>;
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-3xl font-bold">Inbox</h1>
-      <p className="text-sm text-ink-500">Tenants who messaged you about your listings.</p>
+    <div className="space-y-8">
+      <PageHeading
+        eyebrow="Agent workspace"
+        title="Inbox"
+        subtitle="Tenants who messaged you about your listings."
+      />
 
       {items.length === 0 ? (
         <p className="text-ink-500">No inquiries yet.</p>
       ) : (
         <ul className="space-y-3">
           {items.map((i) => (
-            <li key={i.id} className={`flex gap-4 rounded-xl border bg-surface p-4 ${i.respondedAt ? "border-ink-200" : "border-brand-300 bg-brand-50/40"}`}>
-              <div className="h-16 w-16 flex-none overflow-hidden rounded-lg bg-ink-100">
+            <li key={i.id} className={`flex gap-4 rounded-2xl border bg-surface p-4 shadow-card ${i.respondedAt ? "border-ink-200" : "border-brand-300 bg-brand-50/40"}`}>
+              <div className="h-16 w-16 flex-none overflow-hidden rounded-xl bg-ink-100">
                 {i.listing.primaryPhotoKey && photoUrl(i.listing.primaryPhotoKey) ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={photoUrl(i.listing.primaryPhotoKey)!} alt="" className="h-full w-full object-cover" />
                 ) : null}
               </div>
               <div className="min-w-0 flex-1">
-                <Link href={`/agent/${i.listing.id}`} className="truncate font-semibold hover:text-brand-600">
+                <Link href={`/agent/${i.listing.id}`} className="truncate font-serif text-lg text-ink-900 hover:text-brand-600">
                   {i.listing.title}
                 </Link>
                 <p className="text-sm">
