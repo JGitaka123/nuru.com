@@ -19,6 +19,7 @@ import { isFreeLaunch } from "./plans";
 import { send as sendEmail } from "./email";
 import { sendSms } from "./notifications";
 import { recordEvent } from "./events";
+import { ConflictError, NotFoundError } from "../lib/errors";
 
 const AUTO_EXECUTE_CONFIDENCE = 0.7;
 const MAX_MESSAGES_PER_WEEK = 2;
@@ -369,10 +370,10 @@ function escapeHtml(s: string): string {
 /** Admin manually approves/edits a REVIEW_NEEDED task. */
 export async function approveTask(taskId: string, _adminId: string, edits?: { smsBody?: string; emailSubject?: string; emailBody?: string }) {
   const task = await prisma.agentTask.findUnique({ where: { id: taskId } });
-  if (!task) throw new Error("Task not found");
-  if (task.status !== "REVIEW_NEEDED") throw new Error(`Task is ${task.status}`);
+  if (!task) throw new NotFoundError("Task");
+  if (task.status !== "REVIEW_NEEDED") throw new ConflictError(`Task is ${task.status}, not REVIEW_NEEDED`);
   const draft = task.aiDraft as { smsBody?: string; emailSubject?: string; emailBody?: string; primaryCta?: string; primaryCtaUrl?: string } | null;
-  if (!draft) throw new Error("Task has no draft to approve");
+  if (!draft) throw new ConflictError("Task has no draft to approve");
 
   const finalDraft = { ...draft, ...edits };
   await prisma.agentTask.update({
