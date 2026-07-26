@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { KENYA_COUNTIES } from "@/lib/locations";
 
 const BASE = process.env.NEXT_PUBLIC_WEB_URL ?? "https://nuruhomes.com";
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -9,9 +10,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticUrls: MetadataRoute.Sitemap = [
     { url: `${BASE}/`, changeFrequency: "daily", priority: 1.0 },
     { url: `${BASE}/search`, changeFrequency: "always", priority: 0.9 },
+    { url: `${BASE}/locations`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE}/pricing`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/privacy`, changeFrequency: "yearly", priority: 0.3 },
   ];
+
+  // County landing pages — one crawlable page per county for local SEO.
+  const countyUrls: MetadataRoute.Sitemap = KENYA_COUNTIES.map((c) => ({
+    url: `${BASE}/homes/${c.slug}`,
+    changeFrequency: "daily" as const,
+    priority: 0.75,
+  }));
+  staticUrls.push(...countyUrls);
 
   // Pull active listings (paginated; cap to 5,000 — Google's per-sitemap limit
   // is 50K, but we should split when it grows).

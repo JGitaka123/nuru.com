@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
-import { FEATURED_MARKETS } from "@/lib/locations";
+import { FEATURED_MARKETS, countySlug } from "@/lib/locations";
 
 // Example queries stay verbatim; they show search accepts EN/Swahili/Sheng
 // and span the country, not just Nairobi.
@@ -104,7 +104,7 @@ export default function HomePage() {
             <h2 className="mt-2 font-serif text-3xl leading-tight text-ink-900 sm:text-4xl">{t("home.browseTitle")}</h2>
             <p className="mt-2 max-w-prose text-ink-600">{t("home.browseSub")}</p>
           </div>
-          <Link href="/search" className="rounded-xl border border-ink-300 px-4 py-2.5 text-sm font-medium text-ink-800 transition hover:border-ink-400">
+          <Link href="/locations" className="rounded-xl border border-ink-300 px-4 py-2.5 text-sm font-medium text-ink-800 transition hover:border-ink-400">
             {t("home.browseAll")}
           </Link>
         </div>
@@ -112,7 +112,7 @@ export default function HomePage() {
           {FEATURED_MARKETS.map((m) => (
             <Link
               key={m.name}
-              href={`/search?q=${encodeURIComponent(m.county)}`}
+              href={`/homes/${countySlug(m.county)}`}
               className="group flex items-center justify-between gap-3 rounded-2xl border border-ink-200 bg-surface p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-lift"
             >
               <span className="min-w-0">

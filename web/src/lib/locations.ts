@@ -95,3 +95,16 @@ export function countiesByRegion(): Array<{ region: Region; counties: County[] }
     counties: KENYA_COUNTIES.filter((c) => c.region === region),
   })).filter((g) => g.counties.length > 0);
 }
+
+const BY_SLUG = new Map(KENYA_COUNTIES.map((c) => [c.slug, c]));
+const SLUG_BY_NAME = new Map(KENYA_COUNTIES.map((c) => [c.county, c.slug]));
+
+/** Look up a county by its URL slug (e.g. "uasin-gishu"). */
+export function countyBySlug(slug: string): County | undefined {
+  return BY_SLUG.get(slug);
+}
+
+/** URL slug for a canonical county name (e.g. "Uasin Gishu" → "uasin-gishu"). */
+export function countySlug(name: string): string {
+  return SLUG_BY_NAME.get(name) ?? name.toLowerCase().replace(/\s+/g, "-");
+}
