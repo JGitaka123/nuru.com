@@ -16,7 +16,7 @@ export default function Footer() {
             Verified rentals and homes for sale across Kenya, with deposits held in M-Pesa escrow until you move in.
           </p>
         </div>
-        <FooterCol title="Explore" links={[["Rent", "/search"], ["Buy", "/search?type=SALE"], ["Pricing", "/pricing"]]} />
+        <FooterCol title="Explore" links={[["Rent", "/search"], ["Buy", "/search?type=SALE"], ["Locations", "/locations"], ["Pricing", "/pricing"]]} />
         <FooterCol title="For agents" links={[["List a property", "/agent/new"], ["Agent dashboard", "/agent"], ["Verification", "/agent/verify"]]} />
         <FooterCol title="Company" links={[[t("footer.privacy"), "/privacy"], [t("footer.contact"), "mailto:hello@nuruhomes.com"]]} />
       </div>
