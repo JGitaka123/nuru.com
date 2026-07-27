@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { api, getToken, type Listing, type SessionUser } from "@/lib/api";
 import { formatKes, formatKesFull, formatCategory, photoUrl } from "@/lib/format";
 import { PageHeading, StatTile, StatusBadge, btnSecondary, btnBrand } from "@/components/ui";
+import OnboardingChecklist from "@/components/OnboardingChecklist";
 
 export default function AgentDashboard() {
   const router = useRouter();
@@ -57,22 +58,14 @@ export default function AgentDashboard() {
         }
       />
 
+      <OnboardingChecklist />
+
       {listings.length > 0 && (
         <section className="grid gap-4 sm:grid-cols-3">
           <StatTile label="Listings" value={listings.length} hint={`${active} active`} />
           <StatTile label="For rent" value={listings.length - forSale} />
           <StatTile label="For sale" value={forSale} />
         </section>
-      )}
-
-      {user?.verificationStatus !== "VERIFIED" && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-          <p className="font-medium text-amber-900">Verify your account to publish listings.</p>
-          <p className="mt-1 text-sm text-amber-800">Add your KRA PIN and ID — takes 2 minutes.</p>
-          <Link href="/agent/verify" className="mt-3 inline-block rounded-lg bg-amber-500 px-3.5 py-2 text-sm font-medium text-white hover:bg-amber-600">
-            Verify now
-          </Link>
-        </div>
       )}
 
       {listings.length === 0 ? (

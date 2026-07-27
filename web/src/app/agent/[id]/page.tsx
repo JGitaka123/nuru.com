@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { api, getToken, type Listing } from "@/lib/api";
 import { formatKes, formatCategory, photoUrl } from "@/lib/format";
 import { Panel, StatusBadge, btnBrand, btnSecondary } from "@/components/ui";
+import ListingQualityCard from "@/components/ListingQualityCard";
 
 const NEXT_TRANSITIONS: Record<string, string[]> = {
   DRAFT: ["PENDING_REVIEW", "REMOVED"],
@@ -77,6 +78,8 @@ export default function AgentListingPage({ params }: { params: { id: string } })
           <img key={k} src={photoUrl(k)!} alt="" className="aspect-square rounded-xl border border-ink-200 object-cover" />
         ))}
       </div>
+
+      <ListingQualityCard listing={listing} />
 
       <Panel>
         <h2 className="font-serif text-xl text-ink-900">Description</h2>

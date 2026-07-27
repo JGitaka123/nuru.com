@@ -3,6 +3,7 @@
  *
  *   GET /v1/agent/analytics                    summary across my listings
  *   GET /v1/agent/listings/:id/analytics       deep-dive on one listing
+ *   GET /v1/agent/onboarding                   activation checklist progress
  *
  * Pulls from the Event table (already populated by services). All
  * authorization at the route level: agent only sees their own listings.
@@ -13,6 +14,7 @@ import { z } from "zod";
 import { prisma } from "../db/client";
 import { requireRole } from "../lib/auth";
 import { ForbiddenError, NotFoundError } from "../lib/errors";
+import { getOnboardingProgress } from "../services/onboarding";
 
 const SinceQuery = z.object({
   days: z.coerce.number().int().min(1).max(90).default(30),
@@ -155,6 +157,16 @@ export async function agentAnalyticsRoutes(app: FastifyInstance) {
         },
         daily: rawDaily.map((r) => ({ date: r.d.toISOString().slice(0, 10), views: r.n })),
       });
+    },
+  );
+
+  // Activation checklist — what's left before this agent has a live listing.
+  app.get(
+    "/v1/agent/onboarding",
+    { preHandler: requireRole("AGENT", "LANDLORD", "ADMIN") },
+    async (req, reply) => {
+      const progress = await getOnboardingProgress(req.user!.sub);
+      return reply.send(progress);
     },
   );
 }

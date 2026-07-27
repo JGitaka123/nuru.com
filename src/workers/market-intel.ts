@@ -11,10 +11,16 @@
 import { Worker as BullWorker } from "bullmq";
 import { prisma } from "../db/client";
 import { logger } from "../lib/logger";
+import { countyForArea } from "../lib/locations";
 import { redis, type MarketIntelJob } from "./queues";
 
+type Scope = "NEIGHBORHOOD" | "COUNTY";
+
 interface RawSegmentRow {
+  scope: Scope;
+  /** Area name for NEIGHBORHOOD scope; the county name for COUNTY scope. */
   neighborhood: string;
+  county: string | null;
   category: string;
   bedrooms: number;
   rents: number[];          // KES cents, active listings
@@ -23,6 +29,9 @@ interface RawSegmentRow {
   inquiriesCount: number;
   viewingsCount: number;
 }
+
+/** A segment needs at least this many active listings to publish a band. */
+const MIN_SAMPLE = 3;
 
 export function startMarketIntelWorker() {
   const worker = new BullWorker<MarketIntelJob>(
@@ -40,24 +49,30 @@ export function startMarketIntelWorker() {
   return worker;
 }
 
-async function runMarketIntel(observedDate: Date) {
+/**
+ * Compute and upsert every market segment for a date. Exported so backfills
+ * and one-off recomputes can call it without going through the queue.
+ */
+export async function runMarketIntel(observedDate: Date) {
   logger.info({ observedDate }, "running market intel");
 
   // Step 1: pull all segment data via grouped raw SQL.
   // Active listings → for price bands.
+  // Only RENT listings carry a meaningful monthly rent — sale asking prices
+  // would badly skew the bands.
   const activeRows: Array<{
-    neighborhood: string; category: string; bedrooms: number; rent_kes_cents: number;
+    neighborhood: string; county: string | null; category: string; bedrooms: number; rent_kes_cents: number;
   }> = await prisma.$queryRawUnsafe(`
-    SELECT neighborhood, category::text AS category, bedrooms, "rentKesCents" AS rent_kes_cents
+    SELECT neighborhood, county, category::text AS category, bedrooms, "rentKesCents" AS rent_kes_cents
     FROM "Listing"
-    WHERE status = 'ACTIVE' AND "fraudScore" < 60
+    WHERE status = 'ACTIVE' AND "fraudScore" < 60 AND "listingType" = 'RENT'
   `);
 
   // Recently-rented → for days-to-rent (last 90 days).
   const rentedRows: Array<{
-    neighborhood: string; category: string; bedrooms: number; days_to_rent: number;
+    neighborhood: string; county: string | null; category: string; bedrooms: number; days_to_rent: number;
   }> = await prisma.$queryRawUnsafe(`
-    SELECT neighborhood, category::text AS category, bedrooms,
+    SELECT neighborhood, county, category::text AS category, bedrooms,
            EXTRACT(DAY FROM ("rentedAt" - "publishedAt"))::int AS days_to_rent
     FROM "Listing"
     WHERE status = 'RENTED' AND "rentedAt" IS NOT NULL AND "publishedAt" IS NOT NULL
@@ -66,30 +81,31 @@ async function runMarketIntel(observedDate: Date) {
 
   // Counts of inquiries & viewings per segment (last 30 days).
   const activitySince = new Date(Date.now() - 30 * 86_400_000);
-  const inquiryRows: Array<{ neighborhood: string; category: string; bedrooms: number; n: number }> =
+  const inquiryRows: Array<{ neighborhood: string; county: string | null; category: string; bedrooms: number; n: number }> =
     await prisma.$queryRawUnsafe(`
-      SELECT l.neighborhood, l.category::text AS category, l.bedrooms, COUNT(*)::int AS n
+      SELECT l.neighborhood, l.county, l.category::text AS category, l.bedrooms, COUNT(*)::int AS n
       FROM "Inquiry" i JOIN "Listing" l ON l.id = i."listingId"
       WHERE i."createdAt" > $1
-      GROUP BY l.neighborhood, l.category, l.bedrooms
+      GROUP BY l.neighborhood, l.county, l.category, l.bedrooms
     `, activitySince);
 
-  const viewingRows: Array<{ neighborhood: string; category: string; bedrooms: number; n: number }> =
+  const viewingRows: Array<{ neighborhood: string; county: string | null; category: string; bedrooms: number; n: number }> =
     await prisma.$queryRawUnsafe(`
-      SELECT l.neighborhood, l.category::text AS category, l.bedrooms, COUNT(*)::int AS n
+      SELECT l.neighborhood, l.county, l.category::text AS category, l.bedrooms, COUNT(*)::int AS n
       FROM "Viewing" v JOIN "Listing" l ON l.id = v."listingId"
       WHERE v."createdAt" > $1
-      GROUP BY l.neighborhood, l.category, l.bedrooms
+      GROUP BY l.neighborhood, l.county, l.category, l.bedrooms
     `, activitySince);
 
-  // Step 2: bucket into segments.
+  // Step 2: bucket into segments. Every listing feeds two segments — its own
+  // neighborhood and its county — so thin local markets still roll up into a
+  // usable county-level band.
   const segments = new Map<string, RawSegmentRow>();
-  const key = (n: string, c: string, b: number) => `${n}|${c}|${b}`;
-  const seg = (n: string, c: string, b: number) => {
-    const k = key(n, c, b);
+  const seg = (scope: Scope, label: string, county: string | null, c: string, b: number) => {
+    const k = `${scope}|${label}|${c}|${b}`;
     let s = segments.get(k);
     if (!s) {
-      s = { neighborhood: n, category: c, bedrooms: b,
+      s = { scope, neighborhood: label, county, category: c, bedrooms: b,
             rents: [], daysToRent: [], activeCount: 0,
             inquiriesCount: 0, viewingsCount: 0 };
       segments.set(k, s);
@@ -97,27 +113,33 @@ async function runMarketIntel(observedDate: Date) {
     return s;
   };
 
+  /** The (up to two) segments a row belongs to: its neighborhood and its county. */
+  const targets = (r: { neighborhood: string; county: string | null; category: string; bedrooms: number }) => {
+    const county = r.county ?? countyForArea(r.neighborhood);
+    const list = [seg("NEIGHBORHOOD", r.neighborhood, county, r.category, r.bedrooms)];
+    // The two scopes are stored and queried independently, so a listing whose
+    // area name happens to equal its county still belongs in the county band.
+    if (county) list.push(seg("COUNTY", county, county, r.category, r.bedrooms));
+    return list;
+  };
+
   for (const r of activeRows) {
-    const s = seg(r.neighborhood, r.category, r.bedrooms);
-    s.rents.push(r.rent_kes_cents); s.activeCount++;
+    for (const s of targets(r)) { s.rents.push(r.rent_kes_cents); s.activeCount++; }
   }
   for (const r of rentedRows) {
-    const s = seg(r.neighborhood, r.category, r.bedrooms);
-    s.daysToRent.push(r.days_to_rent);
+    for (const s of targets(r)) s.daysToRent.push(r.days_to_rent);
   }
   for (const r of inquiryRows) {
-    const s = seg(r.neighborhood, r.category, r.bedrooms);
-    s.inquiriesCount += r.n;
+    for (const s of targets(r)) s.inquiriesCount += r.n;
   }
   for (const r of viewingRows) {
-    const s = seg(r.neighborhood, r.category, r.bedrooms);
-    s.viewingsCount += r.n;
+    for (const s of targets(r)) s.viewingsCount += r.n;
   }
 
   // Step 3: compute stats and upsert.
   let upserts = 0;
   for (const s of segments.values()) {
-    if (s.rents.length < 3) continue;        // skip thin segments
+    if (s.rents.length < MIN_SAMPLE) continue;   // skip thin segments
     const sortedRents = [...s.rents].sort((a, b) => a - b);
     const sortedDays = [...s.daysToRent].sort((a, b) => a - b);
 
@@ -130,8 +152,9 @@ async function runMarketIntel(observedDate: Date) {
 
     await prisma.marketStat.upsert({
       where: {
-        observedDate_neighborhood_category_bedrooms: {
+        observedDate_scope_neighborhood_category_bedrooms: {
           observedDate,
+          scope: s.scope,
           neighborhood: s.neighborhood,
           category: s.category as never,
           bedrooms: s.bedrooms,
@@ -139,7 +162,9 @@ async function runMarketIntel(observedDate: Date) {
       },
       create: {
         observedDate,
+        scope: s.scope,
         neighborhood: s.neighborhood,
+        county: s.county,
         category: s.category as never,
         bedrooms: s.bedrooms,
         rentMedian: Math.round(median),
@@ -151,6 +176,7 @@ async function runMarketIntel(observedDate: Date) {
         viewingsPerActive,
       },
       update: {
+        county: s.county,
         rentMedian: Math.round(median),
         rentP25: Math.round(p25),
         rentP75: Math.round(p75),

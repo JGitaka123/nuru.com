@@ -121,6 +121,13 @@ export async function getListing(id: string, viewer?: { sub: string; role: UserR
   if (!canViewPrivate && (listing.status !== "ACTIVE" || listing.fraudScore >= 60)) {
     throw new NotFoundError("Listing");
   }
+  if (!canViewPrivate) {
+    // The AI review notes are internal, agent-facing feedback ("watermark
+    // detected", pricing critique). Never expose them to house hunters.
+    const { aiQualityIssues, aiMissingPhotos, aiPricingNotes, aiEnrichedAt, ...publicFields } = listing;
+    void aiQualityIssues; void aiMissingPhotos; void aiPricingNotes; void aiEnrichedAt;
+    return publicFields;
+  }
   return listing;
 }
 
