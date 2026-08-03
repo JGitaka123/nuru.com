@@ -66,6 +66,7 @@ async function rescoreOne(listingId: string) {
   ]);
   const market = await priceComparison({
     neighborhood: listing.neighborhood,
+    county: listing.county,
     category: listing.category,
     bedrooms: listing.bedrooms,
     rentKesCents: listing.rentKesCents,

@@ -43,11 +43,12 @@ export async function recommendationRoutes(app: FastifyInstance) {
     const { id } = IdParam.parse(req.params);
     const listing = await prisma.listing.findUnique({
       where: { id },
-      select: { neighborhood: true, category: true, bedrooms: true, rentKesCents: true },
+      select: { neighborhood: true, county: true, category: true, bedrooms: true, rentKesCents: true },
     });
     if (!listing) throw new NotFoundError("Listing");
     const cmp = await priceComparison({
       neighborhood: listing.neighborhood,
+      county: listing.county,
       category: listing.category,
       bedrooms: listing.bedrooms,
       rentKesCents: listing.rentKesCents,

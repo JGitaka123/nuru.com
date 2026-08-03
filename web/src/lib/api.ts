@@ -114,6 +114,12 @@ export interface Listing {
   photoKeys: string[];
   verificationStatus: string;
   fraudScore: number;
+  // AI vision feedback (populated by the enrichment worker).
+  aiQualityIssues?: string[] | null;
+  aiMissingPhotos?: string[] | null;
+  aiQualityScore?: number | null;
+  aiPricingNotes?: string | null;
+  aiEnrichedAt?: string | null;
   status: string;
   publishedAt?: string | null;
   lat?: number | null;

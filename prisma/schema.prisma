@@ -183,6 +183,12 @@ model Listing {
   aiQualityScore  Float?          // 0-1, photo + listing completeness
   aiPriceLow      Int?            // estimated fair rent low (KES cents)
   aiPriceHigh     Int?            // estimated fair rent high
+  // Actionable feedback from the vision pass, surfaced to the agent so they
+  // can fix the listing (previously computed then discarded).
+  aiQualityIssues String[]        // ["watermark_detected", "dark_photos", ...]
+  aiMissingPhotos String[]        // ["kitchen", "main bathroom", ...]
+  aiPricingNotes  String?         // one-sentence price reasoning
+  aiEnrichedAt    DateTime?       // last successful enrichment
   fraudScore      Int             @default(0)  // 0-100, higher = riskier
   fraudFlags      String[]        // ["watermark_detected", "price_anomaly", ...]
   fraudScoredAt   DateTime?       // last fraud rescore; drives nightly staleness
@@ -413,13 +419,26 @@ model RentComp {
   @@index([neighborhood, category, bedrooms, observedAt])
 }
 
+// Granularity of a MarketStat segment. Neighborhood bands are the most
+// precise but need enough local supply; county bands are the national
+// fallback so small markets still get a price signal.
+enum MarketScope {
+  NEIGHBORHOOD
+  COUNTY
+}
+
 // Daily aggregated market statistics. Computed by the market-intel worker.
 // Powers AI price suggestions, agent dashboards, and "is this priced
 // well?" indicators on the listing creator.
 model MarketStat {
   id                String   @id @default(cuid())
   observedDate      DateTime @db.Date  // YYYY-MM-DD partition
+  scope             MarketScope @default(NEIGHBORHOOD)
+  // Segment label. For NEIGHBORHOOD scope this is the area/estate; for
+  // COUNTY scope it is the county name itself.
   neighborhood      String
+  // County the segment belongs to (set for both scopes where known).
+  county            String?
   category          ListingCategory
   bedrooms          Int
   // Price band (KES cents).
@@ -434,8 +453,9 @@ model MarketStat {
   viewingsPerActive Float?
   createdAt         DateTime @default(now())
 
-  @@unique([observedDate, neighborhood, category, bedrooms])
+  @@unique([observedDate, scope, neighborhood, category, bedrooms])
   @@index([neighborhood, category, bedrooms, observedDate])
+  @@index([scope, county, category, bedrooms, observedDate])
 }
 
 // =====================================================

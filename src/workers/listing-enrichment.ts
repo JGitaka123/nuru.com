@@ -20,6 +20,7 @@ import { publicUrlFor } from "../lib/r2";
 import { generateListing } from "../prompts/listing-generator";
 import { scoreFraud } from "../prompts/fraud-scorer";
 import { embed } from "../services/inference";
+import { priceComparison } from "../services/market-intel";
 import { redis, type ListingEnrichmentJob } from "./queues";
 
 export function startListingEnrichmentWorker(): Worker<ListingEnrichmentJob> {
@@ -34,10 +35,16 @@ export function startListingEnrichmentWorker(): Worker<ListingEnrichmentJob> {
         return;
       }
 
+      const isSale = listing.listingType === "SALE";
       const photoUrls = listing.photoKeys.map(publicUrlFor);
+      // Give the vision model the full location so it anchors pricing to the
+      // right market — a 2BR in Kapsoya is not a 2BR in Kilimani.
+      const where = listing.county && listing.county !== listing.neighborhood
+        ? `${listing.neighborhood}, ${listing.county}`
+        : listing.neighborhood;
       const draft = await generateListing({
         photoUrls,
-        neighborhood: listing.neighborhood,
+        neighborhood: where,
         agentHint: listing.title,
         meta: { actorId: listing.agentId, targetId: listing.id },
       });
@@ -49,12 +56,25 @@ export function startListingEnrichmentWorker(): Worker<ListingEnrichmentJob> {
         where: { id: listing.agentId },
         include: { agentProfile: true },
       });
+      // Price-vs-market is one of the strongest fraud signals (bait pricing),
+      // so use the real band where we have one instead of assuming "at market".
+      // Sale asking prices aren't comparable to rent bands — skip for SALE.
+      const market = isSale
+        ? { hasBand: false as const }
+        : await priceComparison({
+            neighborhood: listing.neighborhood,
+            county: listing.county,
+            category: listing.category,
+            bedrooms: listing.bedrooms,
+            rentKesCents: listing.rentKesCents,
+          }).catch(() => ({ hasBand: false as const }));
+
       const fraud = await scoreFraud({
         listingId: listing.id,
         agentTrustScore: agent.agentProfile?.trustScore ?? 50,
         agentAccountAgeDays: Math.floor((Date.now() - agent.createdAt.getTime()) / 86_400_000),
         agentVerified: agent.verificationStatus === "VERIFIED",
-        rentVsMarketMedianRatio: 1, // unknown at this point
+        rentVsMarketMedianRatio: market.hasBand ? market.ratio : 1,
         photoCount: listing.photoKeys.length,
         hasWatermark: draft.content.qualityIssues.includes("watermark_detected"),
         reverseImageMatches: 0,
@@ -76,8 +96,18 @@ export function startListingEnrichmentWorker(): Worker<ListingEnrichmentJob> {
           ...(listing.description.length < 40 ? { description: draft.content.description } : {}),
           aiGenerated: true,
           aiQualityScore: draft.content.confidence,
-          aiPriceLow: draft.content.estimatedRentKesLow * 100,
-          aiPriceHigh: draft.content.estimatedRentKesHigh * 100,
+          // The model estimates a monthly *rent* band; it says nothing about a
+          // sale asking price, so don't store it against SALE listings.
+          ...(isSale ? {} : {
+            aiPriceLow: draft.content.estimatedRentKesLow * 100,
+            aiPriceHigh: draft.content.estimatedRentKesHigh * 100,
+            aiPricingNotes: draft.content.pricingNotes,
+          }),
+          // Actionable feedback for the agent — what's wrong with the photos
+          // and which rooms are still missing.
+          aiQualityIssues: draft.content.qualityIssues,
+          aiMissingPhotos: draft.content.missingPhotos,
+          aiEnrichedAt: new Date(),
           fraudScore: fraud.content.score,
           fraudFlags: fraud.content.flags,
           fraudScoredAt: new Date(),
@@ -92,7 +122,14 @@ export function startListingEnrichmentWorker(): Worker<ListingEnrichmentJob> {
       );
 
       logger.info(
-        { listingId, fraudScore: fraud.content.score, qualityIssues: draft.content.qualityIssues },
+        {
+          listingId,
+          fraudScore: fraud.content.score,
+          qualityIssues: draft.content.qualityIssues,
+          missingPhotos: draft.content.missingPhotos.length,
+          // Which market band (if any) backed the price signal.
+          marketScope: market.hasBand ? market.band.scope : null,
+        },
         "listing enriched",
       );
     },

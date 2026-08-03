@@ -14,7 +14,13 @@ import { Skeleton } from "@/components/Skeleton";
 
 interface MarketCmp {
   hasBand: boolean;
-  band?: { median: number; p25: number; p75: number; sampleSize: number };
+  band?: {
+    median: number; p25: number; p75: number; sampleSize: number;
+    /** Which segment the band came from — county is the wider fallback. */
+    scope?: "NEIGHBORHOOD" | "COUNTY";
+    /** The area the band describes (estate name, or county name). */
+    area?: string;
+  };
   ratio?: number;
   label?: "below" | "at" | "above";
   percentDiff?: number;
@@ -128,7 +134,12 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                   {market.label === "below" && `${Math.round(Math.abs(market.percentDiff!))}% below market`}
                   {market.label === "at" && "Around market rate"}
                   {market.label === "above" && `${Math.round(market.percentDiff!)}% above market`}
-                  <span className="text-ink-400"> · median {formatKes(market.band!.median)}</span>
+                  {/* Name the market being compared against — a county-wide
+                      band is a broader claim than a same-estate one. */}
+                  <span className="text-ink-400">
+                    {market.band?.area ? ` in ${market.band.area}` : ""}
+                    {" · median "}{formatKes(market.band!.median)}
+                  </span>
                 </p>
               )}
             </div>
